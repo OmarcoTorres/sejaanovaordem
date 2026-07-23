@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { askAruana } from "@/lib/aruana.functions";
 
 export const Route = createFileRoute("/")({
   component: Aruana,
@@ -124,6 +127,7 @@ type Stage = "welcome" | "onboarding" | "quiz" | "reveal" | "journey";
 function Aruana() {
   const [stage, setStage] = useState<Stage>("welcome");
   const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [intention, setIntention] = useState("");
   const [answers, setAnswers] = useState<ProfileKey[]>([]);
   const [day, setDay] = useState(1);
@@ -136,6 +140,20 @@ function Aruana() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as ProfileKey;
   }, [answers]);
 
+  // Save lead once when profile is revealed
+  const savedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || savedRef.current) return;
+    if (!name || !whatsapp) return;
+    savedRef.current = true;
+    supabase
+      .from("leads")
+      .insert({ name, whatsapp, intention, profile })
+      .then(({ error }) => {
+        if (error) console.error("lead save error", error);
+      });
+  }, [profile, name, whatsapp, intention]);
+
   return (
     <main className="min-h-screen">
       <StarsBackdrop />
@@ -146,6 +164,8 @@ function Aruana() {
           <Onboarding
             name={name}
             setName={setName}
+            whatsapp={whatsapp}
+            setWhatsapp={setWhatsapp}
             intention={intention}
             setIntention={setIntention}
             onNext={() => setStage("quiz")}
@@ -266,17 +286,23 @@ function Welcome({ onStart }: { onStart: () => void }) {
 function Onboarding({
   name,
   setName,
+  whatsapp,
+  setWhatsapp,
   intention,
   setIntention,
   onNext,
 }: {
   name: string;
   setName: (s: string) => void;
+  whatsapp: string;
+  setWhatsapp: (s: string) => void;
   intention: string;
   setIntention: (s: string) => void;
   onNext: () => void;
 }) {
-  const canNext = name.trim().length >= 2 && intention.trim().length >= 3;
+  const digits = whatsapp.replace(/\D/g, "");
+  const canNext =
+    name.trim().length >= 2 && digits.length >= 10 && intention.trim().length >= 3;
   return (
     <section>
       <StepHeader step={1} total={3} title="Antes de tudo, respira." />
@@ -291,6 +317,18 @@ function Onboarding({
             placeholder="Seu primeiro nome"
             className="w-full rounded-xl border border-border bg-input/60 px-4 py-3 text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/40"
           />
+        </Field>
+        <Field label="WhatsApp (para lembretes da jornada)">
+          <input
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value.slice(0, 20))}
+            inputMode="tel"
+            placeholder="(11) 91234-5678"
+            className="w-full rounded-xl border border-border bg-input/60 px-4 py-3 text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/40"
+          />
+          <div className="mt-1 text-xs text-muted-foreground">
+            Guardamos com carinho. Só usamos para te chamar de volta à prática.
+          </div>
         </Field>
         <Field label="Qual é a intenção que você traz para esses 28 dias?">
           <textarea
@@ -421,6 +459,7 @@ function Journey({
   const practice = DAILY_PRACTICES[(day - 1) % DAILY_PRACTICES.length];
   const done = !!completed[day];
   const doneCount = Object.values(completed).filter(Boolean).length;
+  const [mentorOpen, setMentorOpen] = useState(false);
 
   return (
     <section>
@@ -523,17 +562,304 @@ function Journey({
 
       <div className="mt-10 rounded-2xl border border-secondary/30 bg-card/60 p-6">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-secondary">
-          <span>✦</span> Guia interior (IA)
+          <span>✦</span> Aruanã · mentor por voz
         </div>
         <p className="mt-3 text-foreground">
-          Toque para conversar com seu guia. Ele conhece seu arquétipo{" "}
+          Toque no botão e converse com Aruanã. Ele conhece seu arquétipo{" "}
           <em className="text-secondary">{p.name}</em> e sua intenção.
         </p>
-        <button className="mt-4 rounded-full border border-secondary/50 px-5 py-2 text-sm text-secondary transition hover:bg-secondary/10">
-          Abrir conversa (em breve)
+        <button
+          onClick={() => setMentorOpen(true)}
+          className="mt-4 rounded-full border border-secondary/50 px-5 py-2 text-sm text-secondary transition hover:bg-secondary/10"
+        >
+          🎙️ Falar com Aruanã
         </button>
       </div>
+
+      {mentorOpen && (
+        <VoiceMentor
+          name={name}
+          intention={intention}
+          profile={profile}
+          day={day}
+          onClose={() => setMentorOpen(false)}
+        />
+      )}
     </section>
+  );
+}
+
+// ---------- Voice Mentor ----------
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySpeechRecognition = any;
+
+function VoiceMentor({
+  name,
+  intention,
+  profile,
+  day,
+  onClose,
+}: {
+  name: string;
+  intention: string;
+  profile: ProfileKey;
+  day: number;
+  onClose: () => void;
+}) {
+  const ask = useServerFn(askAruana);
+  const [history, setHistory] = useState<ChatMsg[]>([]);
+  const [status, setStatus] = useState<"idle" | "listening" | "thinking" | "speaking">(
+    "idle",
+  );
+  const [transcript, setTranscript] = useState("");
+  const [text, setText] = useState("");
+  const [supported, setSupported] = useState(true);
+  const recognitionRef = useRef<AnySpeechRecognition | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => AnySpeechRecognition;
+      webkitSpeechRecognition?: new () => AnySpeechRecognition;
+    };
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Ctor) {
+      setSupported(false);
+      return;
+    }
+    const rec = new Ctor();
+    rec.lang = "pt-BR";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => {
+      let t = "";
+      for (let i = 0; i < event.results.length; i++) {
+        t += event.results[i][0].transcript;
+      }
+      setTranscript(t);
+    };
+    rec.onend = () => {
+      setStatus((s) => (s === "listening" ? "idle" : s));
+    };
+    recognitionRef.current = rec;
+    return () => {
+      try {
+        rec.abort();
+      } catch {
+        /* noop */
+      }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [history, status]);
+
+  function speak(t: string) {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = "pt-BR";
+    u.rate = 0.98;
+    u.pitch = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const pt = voices.find((v) => v.lang?.toLowerCase().startsWith("pt"));
+    if (pt) u.voice = pt;
+    u.onend = () => setStatus((s) => (s === "speaking" ? "idle" : s));
+    setStatus("speaking");
+    window.speechSynthesis.speak(u);
+  }
+
+  async function send(message: string) {
+    const msg = message.trim();
+    if (!msg) return;
+    setTranscript("");
+    setText("");
+    const next: ChatMsg[] = [...history, { role: "user", content: msg }];
+    setHistory(next);
+    setStatus("thinking");
+    try {
+      const res = await ask({
+        data: {
+          name,
+          intention,
+          profile,
+          day,
+          history: next.slice(-10),
+          message: msg,
+        },
+      });
+      const reply = res.reply || "…";
+      setHistory([...next, { role: "assistant", content: reply }]);
+      speak(reply);
+    } catch (e) {
+      console.error(e);
+      setHistory([
+        ...next,
+        {
+          role: "assistant",
+          content: "Perdi o sinal do rio agora. Respira e me chama de novo daqui a pouco.",
+        },
+      ]);
+      setStatus("idle");
+    }
+  }
+
+  function toggleListen() {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (status === "listening") {
+      try {
+        rec.stop();
+      } catch {
+        /* noop */
+      }
+      const t = transcript.trim();
+      if (t) send(t);
+      return;
+    }
+    window.speechSynthesis?.cancel();
+    setTranscript("");
+    setStatus("listening");
+    try {
+      rec.start();
+    } catch {
+      setStatus("idle");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/70 backdrop-blur-sm sm:items-center">
+      <div className="relative flex h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-secondary/30 bg-card shadow-[var(--shadow-sagrado)] sm:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-full text-xl text-secondary"
+              style={{ background: "var(--gradient-noite)" }}
+            >
+              ✦
+            </div>
+            <div>
+              <div className="font-display text-lg leading-none">Aruanã</div>
+              <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                {status === "listening"
+                  ? "ouvindo..."
+                  : status === "thinking"
+                    ? "sentindo..."
+                    : status === "speaking"
+                      ? "falando..."
+                      : "em silêncio"}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              window.speechSynthesis?.cancel();
+              onClose();
+            }}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-6">
+          {history.length === 0 && (
+            <div className="rounded-2xl border border-secondary/20 bg-background/40 p-4 text-sm text-muted-foreground">
+              Fala comigo, {name || "amigo"}. Pode ser um desabafo, uma dúvida sobre a
+              prática de hoje, ou só um "estou cansado". Aruanã escuta.
+            </div>
+          )}
+          {history.map((m, i) => (
+            <div
+              key={i}
+              className={`rounded-2xl px-4 py-3 text-sm ${
+                m.role === "user"
+                  ? "ml-8 bg-primary/20 text-foreground"
+                  : "mr-8 border border-secondary/30 bg-background/40 text-foreground"
+              }`}
+            >
+              {m.role === "assistant" && (
+                <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-secondary">
+                  Aruanã
+                </div>
+              )}
+              <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+            </div>
+          ))}
+          {transcript && status === "listening" && (
+            <div className="ml-8 rounded-2xl bg-primary/10 px-4 py-3 text-sm italic text-muted-foreground">
+              {transcript}
+            </div>
+          )}
+          {status === "thinking" && (
+            <div className="mr-8 rounded-2xl border border-secondary/30 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+              <span className="inline-flex gap-1">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary [animation-delay:300ms]" />
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-border/60 bg-background/60 px-5 py-4">
+          {!supported ? (
+            <p className="text-xs text-muted-foreground">
+              Voz não é suportada neste navegador. Use o campo abaixo para escrever.
+            </p>
+          ) : (
+            <div className="mb-3 flex items-center justify-center">
+              <button
+                onClick={toggleListen}
+                disabled={status === "thinking" || status === "speaking"}
+                className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl transition disabled:opacity-40 ${
+                  status === "listening"
+                    ? "bg-secondary text-secondary-foreground shadow-[0_0_0_8px_oklch(0.85_0.08_60_/_0.15)]"
+                    : "text-primary-foreground"
+                }`}
+                style={
+                  status === "listening"
+                    ? undefined
+                    : { background: "var(--gradient-brasa)" }
+                }
+                aria-label={status === "listening" ? "Parar" : "Falar"}
+              >
+                {status === "listening" ? "■" : "🎙️"}
+              </button>
+            </div>
+          )}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (status === "thinking") return;
+              send(text);
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Ou escreva para Aruanã..."
+              className="flex-1 rounded-full border border-border bg-input/60 px-4 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+            />
+            <button
+              type="submit"
+              disabled={!text.trim() || status === "thinking"}
+              className="rounded-full px-4 py-2 text-sm text-primary-foreground disabled:opacity-40"
+              style={{ background: "var(--gradient-brasa)" }}
+            >
+              Enviar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }
 
