@@ -145,7 +145,13 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background: var(--gradient-noite);
+    background-attachment: fixed;
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
   }
 }
