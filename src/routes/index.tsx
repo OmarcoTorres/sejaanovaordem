@@ -134,6 +134,8 @@ function Aruana() {
   const [answers, setAnswers] = useState<ProfileKey[]>([]);
   const [day, setDay] = useState(1);
   const [completed, setCompleted] = useState<Record<number, boolean>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   const profile = useMemo<ProfileKey | null>(() => {
     if (answers.length < QUESTIONS.length) return null;
@@ -142,19 +144,112 @@ function Aruana() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as ProfileKey;
   }, [answers]);
 
-  // Save lead once when profile is revealed
-  const savedRef = useRef(false);
+  // 1) Ensure a persistent (anonymous) session and load saved progress.
   useEffect(() => {
-    if (!profile || savedRef.current) return;
+    let cancelled = false;
+    (async () => {
+      let { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.error("anon sign-in error", error);
+          if (!cancelled) setLoaded(true);
+          return;
+        }
+        ({ data: sessionData } = await supabase.auth.getSession());
+      }
+      const uid = sessionData.session?.user.id ?? null;
+      if (cancelled) return;
+      setUserId(uid);
+      if (!uid) {
+        setLoaded(true);
+        return;
+      }
+      const { data: prog } = await supabase
+        .from("journey_progress")
+        .select("*")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (cancelled) return;
+      if (prog) {
+        setName(prog.name ?? "");
+        setWhatsapp(prog.whatsapp ?? "");
+        setIntention(prog.intention ?? "");
+        setAnswers(Array.isArray(prog.answers) ? (prog.answers as ProfileKey[]) : []);
+        setDay(prog.day ?? 1);
+        setCompleted(
+          prog.completed && typeof prog.completed === "object"
+            ? (prog.completed as Record<number, boolean>)
+            : {},
+        );
+        const savedStage = (prog.stage as Stage) ?? "welcome";
+        if (prog.profile && (savedStage === "welcome" || savedStage === "onboarding" || savedStage === "quiz")) {
+          setStage("journey");
+        } else {
+          setStage(savedStage);
+        }
+      }
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 2) Persist progress whenever meaningful state changes.
+  const skipFirstSave = useRef(true);
+  useEffect(() => {
+    if (!loaded || !userId) return;
+    if (skipFirstSave.current) {
+      skipFirstSave.current = false;
+      return;
+    }
+    const payload = {
+      user_id: userId,
+      name: name || null,
+      whatsapp: whatsapp || null,
+      intention: intention || null,
+      profile: profile ?? null,
+      stage,
+      day,
+      answers: answers as unknown as import("@/integrations/supabase/types").Json,
+      completed: completed as unknown as import("@/integrations/supabase/types").Json,
+    };
+    const t = setTimeout(() => {
+      supabase
+        .from("journey_progress")
+        .upsert(payload, { onConflict: "user_id" })
+        .then(({ error }) => {
+          if (error) console.error("progress save error", error);
+        });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed]);
+
+  // 3) Save lead once when profile is revealed.
+  const leadSavedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || leadSavedRef.current) return;
     if (!name || !whatsapp) return;
-    savedRef.current = true;
+    leadSavedRef.current = true;
     supabase
       .from("leads")
-      .insert({ name, whatsapp, intention, profile })
+      .insert({ name, whatsapp, intention, profile, user_id: userId })
       .then(({ error }) => {
         if (error) console.error("lead save error", error);
       });
-  }, [profile, name, whatsapp, intention]);
+  }, [profile, name, whatsapp, intention, userId]);
+
+  if (!loaded) {
+    return (
+      <main className="min-h-screen">
+        <StarsBackdrop />
+        <div className="relative mx-auto flex max-w-2xl items-center justify-center px-5 py-20 text-muted-foreground">
+          <span className="text-sm tracking-[0.2em] uppercase">acendendo a vela…</span>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen">
