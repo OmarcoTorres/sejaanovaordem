@@ -281,7 +281,130 @@ function Welcome({ onStart }: { onStart: () => void }) {
           </div>
         ))}
       </div>
+      <Checkouts />
     </section>
+  );
+}
+
+function Checkouts() {
+  return (
+    <section className="mt-20">
+      <div className="text-center">
+        <p className="text-xs uppercase tracking-[0.35em] text-secondary">
+          Caminhe mais fundo
+        </p>
+        <h2 className="mt-3 font-display text-3xl text-foreground sm:text-4xl">
+          Escolha sua próxima passagem
+        </h2>
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+          Pague por Pix — chave e QR Code em nome de Cauan Pataxó. Após o
+          pagamento, envie o comprovante pelo WhatsApp cadastrado para liberar o
+          acesso.
+        </p>
+      </div>
+      <div className="mt-8 grid gap-5 sm:grid-cols-2">
+        <CheckoutCard
+          badge="Conversa Online"
+          price="R$ 9,99"
+          title="Conversa com o Guia Pataxó"
+          items={[
+            "1 sessão online por chamada de voz",
+            "Escuta ancestral e prática guiada",
+            "Direcionamento para sua semana",
+          ]}
+          qr={pix999.url}
+          pixKey="39431215-005e-4a2f-a647-cf07e615cccc"
+        />
+        <CheckoutCard
+          badge="Desafio Completo"
+          price="R$ 28,00"
+          title="Jornada 28 Dias + Clube do Livro"
+          items={[
+            "Acesso completo aos 28 dias guiados",
+            "Acompanhamento semanal com o Guia",
+            "Clube do Livro ancestral (mensal)",
+          ]}
+          qr={pix28.url}
+          pixKey="39431215-005e-4a2f-a647-cf07e615cccc"
+          highlight
+        />
+      </div>
+    </section>
+  );
+}
+
+function CheckoutCard({
+  badge,
+  price,
+  title,
+  items,
+  qr,
+  pixKey,
+  highlight,
+}: {
+  badge: string;
+  price: string;
+  title: string;
+  items: string[];
+  qr: string;
+  pixKey: string;
+  highlight?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard?.writeText(pixKey).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      },
+      () => {},
+    );
+  }
+  return (
+    <div
+      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 shadow-[var(--shadow-sagrado)] ${
+        highlight ? "border-secondary/60 bg-card" : "border-border bg-card/70"
+      }`}
+    >
+      {highlight && (
+        <div className="absolute right-4 top-4 rounded-full bg-secondary px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-secondary-foreground">
+          Mais escolhido
+        </div>
+      )}
+      <div className="text-[11px] uppercase tracking-[0.25em] text-secondary">
+        {badge}
+      </div>
+      <div className="mt-1 font-display text-3xl text-foreground">{price}</div>
+      <div className="mt-1 font-display text-lg text-foreground/90">{title}</div>
+      <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+        {items.map((it) => (
+          <li key={it} className="flex gap-2">
+            <span className="text-secondary">✦</span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-5 flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-4">
+        <img
+          src={qr}
+          alt={`QR Code Pix ${price}`}
+          className="h-44 w-44 rounded-lg object-contain"
+          loading="lazy"
+        />
+        <div className="w-full text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          Chave Pix (copia e cola)
+        </div>
+        <button
+          onClick={copy}
+          className="w-full truncate rounded-full border border-secondary/40 px-3 py-2 text-xs text-secondary transition hover:bg-secondary/10"
+        >
+          {copied ? "✓ Copiado" : pixKey}
+        </button>
+        <div className="text-[11px] text-muted-foreground">
+          Titular: CAUAN DE JESUS DE QUEIROZ SANTOS · Inter
+        </div>
+      </div>
+    </div>
   );
 }
 
