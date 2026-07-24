@@ -183,9 +183,8 @@ function Aruana() {
             : {},
         );
         const savedStage = (prog.stage as Stage) ?? "welcome";
-        // If they already had a profile, always send them back to journey.
-        if (prog.profile && savedStage !== "welcome") {
-          setStage(savedStage === "welcome" ? "journey" : savedStage);
+        if (prog.profile && (savedStage === "welcome" || savedStage === "onboarding" || savedStage === "quiz")) {
+          setStage("journey");
         } else {
           setStage(savedStage);
         }
