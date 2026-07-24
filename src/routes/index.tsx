@@ -212,8 +212,8 @@ function Aruana() {
       profile: profile ?? null,
       stage,
       day,
-      answers: answers as unknown as object,
-      completed: completed as unknown as object,
+      answers: answers as unknown as import("@/integrations/supabase/types").Json,
+      completed: completed as unknown as import("@/integrations/supabase/types").Json,
     };
     const t = setTimeout(() => {
       supabase
