@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      journey_progress: {
+        Row: {
+          answers: Json
+          completed: Json
+          created_at: string
+          day: number
+          id: string
+          intention: string | null
+          name: string | null
+          profile: string | null
+          stage: string
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          answers?: Json
+          completed?: Json
+          created_at?: string
+          day?: number
+          id?: string
+          intention?: string | null
+          name?: string | null
+          profile?: string | null
+          stage?: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          answers?: Json
+          completed?: Json
+          created_at?: string
+          day?: number
+          id?: string
+          intention?: string | null
+          name?: string | null
+          profile?: string | null
+          stage?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
@@ -21,6 +66,7 @@ export type Database = {
           intention: string | null
           name: string
           profile: string | null
+          user_id: string | null
           whatsapp: string
         }
         Insert: {
@@ -29,6 +75,7 @@ export type Database = {
           intention?: string | null
           name: string
           profile?: string | null
+          user_id?: string | null
           whatsapp: string
         }
         Update: {
@@ -37,6 +84,7 @@ export type Database = {
           intention?: string | null
           name?: string
           profile?: string | null
+          user_id?: string | null
           whatsapp?: string
         }
         Relationships: []
