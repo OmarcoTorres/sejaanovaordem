@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { askAruana } from "@/lib/aruana.functions";
+import pix999 from "@/assets/pix-999.jpeg.asset.json";
+import pix28 from "@/assets/pix-28.jpeg.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Aruana,
@@ -279,7 +281,130 @@ function Welcome({ onStart }: { onStart: () => void }) {
           </div>
         ))}
       </div>
+      <Checkouts />
     </section>
+  );
+}
+
+function Checkouts() {
+  return (
+    <section className="mt-20">
+      <div className="text-center">
+        <p className="text-xs uppercase tracking-[0.35em] text-secondary">
+          Caminhe mais fundo
+        </p>
+        <h2 className="mt-3 font-display text-3xl text-foreground sm:text-4xl">
+          Escolha sua próxima passagem
+        </h2>
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+          Pague por Pix — chave e QR Code em nome de Cauan Pataxó. Após o
+          pagamento, envie o comprovante pelo WhatsApp cadastrado para liberar o
+          acesso.
+        </p>
+      </div>
+      <div className="mt-8 grid gap-5 sm:grid-cols-2">
+        <CheckoutCard
+          badge="Conversa Online"
+          price="R$ 9,99"
+          title="Conversa com o Guia Pataxó"
+          items={[
+            "1 sessão online por chamada de voz",
+            "Escuta ancestral e prática guiada",
+            "Direcionamento para sua semana",
+          ]}
+          qr={pix999.url}
+          pixKey="39431215-005e-4a2f-a647-cf07e615cccc"
+        />
+        <CheckoutCard
+          badge="Desafio Completo"
+          price="R$ 28,00"
+          title="Jornada 28 Dias + Clube do Livro"
+          items={[
+            "Acesso completo aos 28 dias guiados",
+            "Acompanhamento semanal com o Guia",
+            "Clube do Livro ancestral (mensal)",
+          ]}
+          qr={pix28.url}
+          pixKey="39431215-005e-4a2f-a647-cf07e615cccc"
+          highlight
+        />
+      </div>
+    </section>
+  );
+}
+
+function CheckoutCard({
+  badge,
+  price,
+  title,
+  items,
+  qr,
+  pixKey,
+  highlight,
+}: {
+  badge: string;
+  price: string;
+  title: string;
+  items: string[];
+  qr: string;
+  pixKey: string;
+  highlight?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard?.writeText(pixKey).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      },
+      () => {},
+    );
+  }
+  return (
+    <div
+      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 shadow-[var(--shadow-sagrado)] ${
+        highlight ? "border-secondary/60 bg-card" : "border-border bg-card/70"
+      }`}
+    >
+      {highlight && (
+        <div className="absolute right-4 top-4 rounded-full bg-secondary px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-secondary-foreground">
+          Mais escolhido
+        </div>
+      )}
+      <div className="text-[11px] uppercase tracking-[0.25em] text-secondary">
+        {badge}
+      </div>
+      <div className="mt-1 font-display text-3xl text-foreground">{price}</div>
+      <div className="mt-1 font-display text-lg text-foreground/90">{title}</div>
+      <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+        {items.map((it) => (
+          <li key={it} className="flex gap-2">
+            <span className="text-secondary">✦</span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-5 flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-4">
+        <img
+          src={qr}
+          alt={`QR Code Pix ${price}`}
+          className="h-44 w-44 rounded-lg object-contain"
+          loading="lazy"
+        />
+        <div className="w-full text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          Chave Pix (copia e cola)
+        </div>
+        <button
+          onClick={copy}
+          className="w-full truncate rounded-full border border-secondary/40 px-3 py-2 text-xs text-secondary transition hover:bg-secondary/10"
+        >
+          {copied ? "✓ Copiado" : pixKey}
+        </button>
+        <div className="text-[11px] text-muted-foreground">
+          Titular: CAUAN DE JESUS DE QUEIROZ SANTOS · Inter
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -593,9 +718,6 @@ function Journey({
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnySpeechRecognition = any;
-
 function VoiceMentor({
   name,
   intention,
@@ -611,47 +733,28 @@ function VoiceMentor({
 }) {
   const ask = useServerFn(askAruana);
   const [history, setHistory] = useState<ChatMsg[]>([]);
-  const [status, setStatus] = useState<"idle" | "listening" | "thinking" | "speaking">(
-    "idle",
-  );
-  const [transcript, setTranscript] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "listening" | "transcribing" | "thinking" | "speaking"
+  >("idle");
   const [text, setText] = useState("");
   const [supported, setSupported] = useState(true);
-  const recognitionRef = useRef<AnySpeechRecognition | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const w = window as unknown as {
-      SpeechRecognition?: new () => AnySpeechRecognition;
-      webkitSpeechRecognition?: new () => AnySpeechRecognition;
-    };
-    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!Ctor) {
+    if (typeof window === "undefined") return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setSupported(false);
-      return;
     }
-    const rec = new Ctor();
-    rec.lang = "pt-BR";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => {
-      let t = "";
-      for (let i = 0; i < event.results.length; i++) {
-        t += event.results[i][0].transcript;
-      }
-      setTranscript(t);
-    };
-    rec.onend = () => {
-      setStatus((s) => (s === "listening" ? "idle" : s));
-    };
-    recognitionRef.current = rec;
     return () => {
       try {
-        rec.abort();
+        recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
       } catch {
         /* noop */
       }
-      window.speechSynthesis?.cancel();
+      audioRef.current?.pause();
     };
   }, []);
 
@@ -659,25 +762,38 @@ function VoiceMentor({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [history, status]);
 
-  function speak(t: string) {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang = "pt-BR";
-    u.rate = 0.98;
-    u.pitch = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const pt = voices.find((v) => v.lang?.toLowerCase().startsWith("pt"));
-    if (pt) u.voice = pt;
-    u.onend = () => setStatus((s) => (s === "speaking" ? "idle" : s));
-    setStatus("speaking");
-    window.speechSynthesis.speak(u);
+  async function playTTS(t: string) {
+    try {
+      setStatus("speaking");
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: t }),
+      });
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current?.pause();
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setStatus((s) => (s === "speaking" ? "idle" : s));
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setStatus("idle");
+      };
+      await audio.play();
+    } catch (e) {
+      console.error("tts", e);
+      setStatus("idle");
+    }
   }
 
   async function send(message: string) {
     const msg = message.trim();
     if (!msg) return;
-    setTranscript("");
     setText("");
     const next: ChatMsg[] = [...history, { role: "user", content: msg }];
     setHistory(next);
@@ -695,7 +811,7 @@ function VoiceMentor({
       });
       const reply = res.reply || "…";
       setHistory([...next, { role: "assistant", content: reply }]);
-      speak(reply);
+      await playTTS(reply);
     } catch (e) {
       console.error(e);
       setHistory([
@@ -709,28 +825,85 @@ function VoiceMentor({
     }
   }
 
-  function toggleListen() {
-    const rec = recognitionRef.current;
-    if (!rec) return;
-    if (status === "listening") {
+  async function startRecording() {
+    if (!supported) return;
+    try {
+      audioRef.current?.pause();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+          ? "audio/mp4"
+          : "";
+      const rec = mime
+        ? new MediaRecorder(stream, { mimeType: mime })
+        : new MediaRecorder(stream);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        if (blob.size < 1200) {
+          setStatus("idle");
+          return;
+        }
+        setStatus("transcribing");
+        try {
+          const fd = new FormData();
+          const ext = (rec.mimeType || "audio/webm").includes("mp4") ? "mp4" : "webm";
+          fd.append("file", blob, `recording.${ext}`);
+          const r = await fetch("/api/stt", { method: "POST", body: fd });
+          if (!r.ok) throw new Error(`STT ${r.status}`);
+          const { text: transcript } = (await r.json()) as { text: string };
+          const clean = (transcript || "").trim();
+          if (!clean) {
+            setStatus("idle");
+            return;
+          }
+          await send(clean);
+        } catch (e) {
+          console.error("stt", e);
+          setStatus("idle");
+        }
+      };
+      recorderRef.current = rec;
+      rec.start();
+      setStatus("listening");
+    } catch (e) {
+      console.error("mic", e);
+      setSupported(false);
+      setStatus("idle");
+    }
+  }
+
+  function stopRecording() {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") {
       try {
         rec.stop();
       } catch {
         /* noop */
       }
-      const t = transcript.trim();
-      if (t) send(t);
-      return;
-    }
-    window.speechSynthesis?.cancel();
-    setTranscript("");
-    setStatus("listening");
-    try {
-      rec.start();
-    } catch {
-      setStatus("idle");
     }
   }
+
+  function toggleListen() {
+    if (status === "listening") stopRecording();
+    else if (status === "idle") startRecording();
+  }
+
+  const statusLabel =
+    status === "listening"
+      ? "ouvindo..."
+      : status === "transcribing"
+        ? "entendendo..."
+        : status === "thinking"
+          ? "sentindo..."
+          : status === "speaking"
+            ? "falando..."
+            : "em silêncio";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/70 backdrop-blur-sm sm:items-center">
@@ -746,19 +919,14 @@ function VoiceMentor({
             <div>
               <div className="font-display text-lg leading-none">Aruanã</div>
               <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                {status === "listening"
-                  ? "ouvindo..."
-                  : status === "thinking"
-                    ? "sentindo..."
-                    : status === "speaking"
-                      ? "falando..."
-                      : "em silêncio"}
+                {statusLabel}
               </div>
             </div>
           </div>
           <button
             onClick={() => {
-              window.speechSynthesis?.cancel();
+              audioRef.current?.pause();
+              stopRecording();
               onClose();
             }}
             className="text-muted-foreground hover:text-foreground"
@@ -771,8 +939,8 @@ function VoiceMentor({
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-6">
           {history.length === 0 && (
             <div className="rounded-2xl border border-secondary/20 bg-background/40 p-4 text-sm text-muted-foreground">
-              Fala comigo, {name || "amigo"}. Pode ser um desabafo, uma dúvida sobre a
-              prática de hoje, ou só um "estou cansado". Aruanã escuta.
+              Toca o microfone e fala comigo, {name || "amigo"}. Eu escuto, entendo
+              o que você disse e respondo em voz — como numa conversa de verdade.
             </div>
           )}
           {history.map((m, i) => (
@@ -792,12 +960,7 @@ function VoiceMentor({
               <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
             </div>
           ))}
-          {transcript && status === "listening" && (
-            <div className="ml-8 rounded-2xl bg-primary/10 px-4 py-3 text-sm italic text-muted-foreground">
-              {transcript}
-            </div>
-          )}
-          {status === "thinking" && (
+          {(status === "thinking" || status === "transcribing") && (
             <div className="mr-8 rounded-2xl border border-secondary/30 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
               <span className="inline-flex gap-1">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
@@ -810,14 +973,18 @@ function VoiceMentor({
 
         <div className="border-t border-border/60 bg-background/60 px-5 py-4">
           {!supported ? (
-            <p className="text-xs text-muted-foreground">
-              Voz não é suportada neste navegador. Use o campo abaixo para escrever.
+            <p className="mb-3 text-center text-xs text-muted-foreground">
+              Microfone indisponível neste navegador. Use o campo abaixo para escrever.
             </p>
           ) : (
             <div className="mb-3 flex items-center justify-center">
               <button
                 onClick={toggleListen}
-                disabled={status === "thinking" || status === "speaking"}
+                disabled={
+                  status === "thinking" ||
+                  status === "speaking" ||
+                  status === "transcribing"
+                }
                 className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl transition disabled:opacity-40 ${
                   status === "listening"
                     ? "bg-secondary text-secondary-foreground shadow-[0_0_0_8px_oklch(0.85_0.08_60_/_0.15)]"
@@ -828,7 +995,7 @@ function VoiceMentor({
                     ? undefined
                     : { background: "var(--gradient-brasa)" }
                 }
-                aria-label={status === "listening" ? "Parar" : "Falar"}
+                aria-label={status === "listening" ? "Parar e enviar" : "Falar"}
               >
                 {status === "listening" ? "■" : "🎙️"}
               </button>
@@ -837,7 +1004,7 @@ function VoiceMentor({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (status === "thinking") return;
+              if (status !== "idle") return;
               send(text);
             }}
             className="flex items-center gap-2"
@@ -850,7 +1017,7 @@ function VoiceMentor({
             />
             <button
               type="submit"
-              disabled={!text.trim() || status === "thinking"}
+              disabled={!text.trim() || status !== "idle"}
               className="rounded-full px-4 py-2 text-sm text-primary-foreground disabled:opacity-40"
               style={{ background: "var(--gradient-brasa)" }}
             >
