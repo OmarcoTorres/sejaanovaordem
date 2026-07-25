@@ -1125,14 +1125,14 @@ function Journey({
           <em className="text-secondary">{p.name}</em> e sua intenção.
         </p>
         <button
-          onClick={() => setMentorOpen(true)}
+          onClick={() => (paid ? setMentorOpen(true) : onRequestUnlock())}
           className="mt-4 rounded-full border border-secondary/50 px-5 py-2 text-sm text-secondary transition hover:bg-secondary/10"
         >
-          🎙️ Falar com Aruanã
+          {paid ? "🎙️ Falar com Aruanã" : "🔒 Liberar mentor Aruanã"}
         </button>
       </div>
 
-      {mentorOpen && (
+      {mentorOpen && paid && (
         <VoiceMentor
           name={name}
           intention={intention}
