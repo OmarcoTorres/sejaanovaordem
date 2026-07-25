@@ -1461,7 +1461,131 @@ function VoiceMentor({
   );
 }
 
+// ---------- Paywall Gate ----------
+
+function PaywallGate({
+  open,
+  name,
+  onConfirmPaid,
+}: {
+  open: boolean;
+  name: string;
+  onConfirmPaid: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [zoom, setZoom] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  function copy() {
+    navigator.clipboard?.writeText(PIX_KEY).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      },
+      () => {},
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+      <div className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-secondary/40 bg-card p-6 shadow-[var(--shadow-sagrado)]">
+        <div className="text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-secondary/50 text-2xl text-secondary" style={{ background: "var(--gradient-noite)" }}>
+            🔒
+          </div>
+          <p className="mt-4 text-[11px] uppercase tracking-[0.3em] text-secondary">
+            Portão do Desafio
+          </p>
+          <h3 className="mt-2 font-display text-3xl leading-tight text-foreground">
+            {name ? `${name}, ` : ""}sua jornada começa aqui.
+          </h3>
+          <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
+            Para liberar o Desafio 28 dias completo e conversar com o mentor Aruanã por voz,
+            confirme sua entrada com um Pix único de <strong className="text-foreground">R$ 28,00</strong>.
+          </p>
+        </div>
+
+        <ul className="mt-5 space-y-2 rounded-2xl border border-border/60 bg-background/40 p-4 text-sm text-foreground/90">
+          {[
+            "28 dias de práticas ancestrais guiadas",
+            "Banhos, defumações, meditações e canalizações",
+            "Mentor Aruanã por voz — ilimitado",
+            "Ativação do DMT natural pela prática",
+          ].map((t) => (
+            <li key={t} className="flex gap-2.5">
+              <span className="mt-0.5 text-secondary">✦</span>
+              <span className="leading-snug">{t}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-5 rounded-2xl border border-secondary/30 bg-background/60 p-4">
+          <button
+            type="button"
+            onClick={() => setZoom(true)}
+            className="mx-auto block"
+            aria-label="Ampliar QR Code"
+          >
+            <img
+              src={pix28.url}
+              alt="QR Code Pix R$ 28,00"
+              className="mx-auto h-48 w-48 rounded-lg object-contain"
+            />
+          </button>
+          <div className="mt-3 text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            Chave Pix (copia e cola)
+          </div>
+          <button
+            onClick={copy}
+            className="mt-2 w-full truncate rounded-full border border-secondary/40 px-3 py-2 text-xs text-secondary transition hover:bg-secondary/10"
+          >
+            {copied ? "✓ Copiado" : PIX_KEY}
+          </button>
+          <div className="mt-2 text-center text-[11px] text-muted-foreground">
+            Titular: CAUAN DE JESUS DE QUEIROZ SANTOS · Inter
+          </div>
+        </div>
+
+        <button
+          onClick={onConfirmPaid}
+          className="mt-5 w-full rounded-full px-6 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
+          style={{ background: "var(--gradient-brasa)" }}
+        >
+          ✓ Já paguei — liberar meu acesso
+        </button>
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          Envie o comprovante no WhatsApp cadastrado para confirmação manual.
+        </p>
+      </div>
+
+      {zoom && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 p-4"
+          onClick={() => setZoom(false)}
+        >
+          <img
+            src={pix28.url}
+            alt="QR Code Pix R$ 28,00 ampliado"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl bg-white p-3 object-contain"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Primitives ----------
+
 
 function StepHeader({ step, total, title }: { step: number; total: number; title: string }) {
   return (
