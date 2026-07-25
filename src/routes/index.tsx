@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { askAruana } from "@/lib/aruana.functions";
 import pix999 from "@/assets/pix-999.jpeg.asset.json";
 import pix28 from "@/assets/pix-28.jpeg.asset.json";
+import pix197 from "@/assets/pix-197.jpeg.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Aruana,
