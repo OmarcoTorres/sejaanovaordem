@@ -127,6 +127,8 @@ const DAILY_PRACTICES = [
 
 type Stage = "welcome" | "onboarding" | "quiz" | "reveal" | "journey";
 
+const STAGE_ORDER: Stage[] = ["welcome", "onboarding", "quiz", "reveal", "journey"];
+
 function Aruana() {
   const [stage, setStage] = useState<Stage>("welcome");
   const [name, setName] = useState("");
@@ -137,6 +139,8 @@ function Aruana() {
   const [completed, setCompleted] = useState<Record<number, boolean>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [paid, setPaid] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   const profile = useMemo<ProfileKey | null>(() => {
     if (answers.length < QUESTIONS.length) return null;
@@ -144,6 +148,11 @@ function Aruana() {
     answers.forEach((a) => (counts[a] = (counts[a] || 0) + 1));
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as ProfileKey;
   }, [answers]);
+
+  function goBack() {
+    const idx = STAGE_ORDER.indexOf(stage);
+    if (idx > 0) setStage(STAGE_ORDER[idx - 1]);
+  }
 
   // 1) Ensure a persistent (anonymous) session and load saved progress.
   useEffect(() => {
@@ -183,6 +192,7 @@ function Aruana() {
             ? (prog.completed as Record<number, boolean>)
             : {},
         );
+        setPaid(!!(prog as { paid?: boolean }).paid);
         const savedStage = (prog.stage as Stage) ?? "welcome";
         if (prog.profile && (savedStage === "welcome" || savedStage === "onboarding" || savedStage === "quiz")) {
           setStage("journey");
@@ -215,6 +225,7 @@ function Aruana() {
       day,
       answers: answers as unknown as import("@/integrations/supabase/types").Json,
       completed: completed as unknown as import("@/integrations/supabase/types").Json,
+      paid,
     };
     const t = setTimeout(() => {
       supabase
@@ -225,7 +236,14 @@ function Aruana() {
         });
     }, 400);
     return () => clearTimeout(t);
-  }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed]);
+  }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed, paid]);
+
+  // 5s após entrar na jornada sem pagamento, abrir o portão do Desafio.
+  useEffect(() => {
+    if (stage !== "journey" || paid) return;
+    const t = setTimeout(() => setPaywallOpen(true), 5000);
+    return () => clearTimeout(t);
+  }, [stage, paid]);
 
   // 3) Save lead once when profile is revealed.
   const leadSavedRef = useRef(false);
@@ -256,7 +274,7 @@ function Aruana() {
     <main className="min-h-screen">
       <StarsBackdrop />
       <div className="relative mx-auto max-w-2xl px-5 py-10 sm:py-16">
-        <Header />
+        <Header canGoBack={STAGE_ORDER.indexOf(stage) > 0} onBack={goBack} />
         {stage === "welcome" && <Welcome onStart={() => setStage("onboarding")} />}
         {stage === "onboarding" && (
           <Onboarding
@@ -293,13 +311,24 @@ function Aruana() {
             setDay={setDay}
             completed={completed}
             setCompleted={setCompleted}
+            paid={paid}
+            onRequestUnlock={() => setPaywallOpen(true)}
           />
         )}
         <Footer />
       </div>
+      <PaywallGate
+        open={paywallOpen && stage === "journey" && !paid}
+        name={name}
+        onConfirmPaid={() => {
+          setPaid(true);
+          setPaywallOpen(false);
+        }}
+      />
     </main>
   );
 }
+
 
 // ---------- UI Bits ----------
 
@@ -420,17 +449,30 @@ function StarsBackdrop() {
   );
 }
 
-function Header() {
+function Header({ canGoBack, onBack }: { canGoBack: boolean; onBack: () => void }) {
   return (
     <div className="mb-10 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-secondary/50 bg-primary/20 text-secondary">
-          <span className="text-lg">✦</span>
-        </div>
-        <div>
-          <div className="font-display text-xl leading-none text-foreground">Aruanã</div>
-          <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            guia diário
+      <div className="flex items-center gap-2">
+        {canGoBack ? (
+          <button
+            onClick={onBack}
+            aria-label="Voltar"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-card/50 text-secondary backdrop-blur-sm transition hover:border-secondary/60 hover:bg-card"
+          >
+            <span className="text-lg leading-none">←</span>
+          </button>
+        ) : (
+          <div className="h-10 w-10" aria-hidden />
+        )}
+        <div className="flex items-center gap-3 pl-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-secondary/50 bg-primary/20 text-secondary">
+            <span className="text-lg">✦</span>
+          </div>
+          <div>
+            <div className="font-display text-xl leading-none text-foreground">Aruanã</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              guia diário
+            </div>
           </div>
         </div>
       </div>
@@ -949,6 +991,8 @@ function Journey({
   setDay,
   completed,
   setCompleted,
+  paid,
+  onRequestUnlock,
 }: {
   name: string;
   intention: string;
@@ -957,6 +1001,8 @@ function Journey({
   setDay: (n: number) => void;
   completed: Record<number, boolean>;
   setCompleted: (c: Record<number, boolean>) => void;
+  paid: boolean;
+  onRequestUnlock: () => void;
 }) {
   const p = PROFILES[profile];
   const phase = PHASES.find((ph) => day >= ph.range[0] && day <= ph.range[1])!;
@@ -1005,7 +1051,13 @@ function Journey({
         </div>
 
         <button
-          onClick={() => setCompleted({ ...completed, [day]: !done })}
+          onClick={() => {
+            if (!paid) {
+              onRequestUnlock();
+              return;
+            }
+            setCompleted({ ...completed, [day]: !done });
+          }}
           className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
             done
               ? "bg-secondary text-secondary-foreground"
@@ -1013,7 +1065,7 @@ function Journey({
           }`}
           style={done ? undefined : { background: "var(--gradient-brasa)" }}
         >
-          {done ? "✓ Prática registrada" : "Marcar prática do dia"}
+          {!paid ? "🔒 Liberar acesso ao Desafio" : done ? "✓ Prática registrada" : "Marcar prática do dia"}
         </button>
 
         <div className="mt-4 flex items-center justify-between text-sm">
@@ -1073,14 +1125,14 @@ function Journey({
           <em className="text-secondary">{p.name}</em> e sua intenção.
         </p>
         <button
-          onClick={() => setMentorOpen(true)}
+          onClick={() => (paid ? setMentorOpen(true) : onRequestUnlock())}
           className="mt-4 rounded-full border border-secondary/50 px-5 py-2 text-sm text-secondary transition hover:bg-secondary/10"
         >
-          🎙️ Falar com Aruanã
+          {paid ? "🎙️ Falar com Aruanã" : "🔒 Liberar mentor Aruanã"}
         </button>
       </div>
 
-      {mentorOpen && (
+      {mentorOpen && paid && (
         <VoiceMentor
           name={name}
           intention={intention}
@@ -1409,7 +1461,131 @@ function VoiceMentor({
   );
 }
 
+// ---------- Paywall Gate ----------
+
+function PaywallGate({
+  open,
+  name,
+  onConfirmPaid,
+}: {
+  open: boolean;
+  name: string;
+  onConfirmPaid: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [zoom, setZoom] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  function copy() {
+    navigator.clipboard?.writeText(PIX_KEY).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      },
+      () => {},
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+      <div className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-secondary/40 bg-card p-6 shadow-[var(--shadow-sagrado)]">
+        <div className="text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-secondary/50 text-2xl text-secondary" style={{ background: "var(--gradient-noite)" }}>
+            🔒
+          </div>
+          <p className="mt-4 text-[11px] uppercase tracking-[0.3em] text-secondary">
+            Portão do Desafio
+          </p>
+          <h3 className="mt-2 font-display text-3xl leading-tight text-foreground">
+            {name ? `${name}, ` : ""}sua jornada começa aqui.
+          </h3>
+          <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
+            Para liberar o Desafio 28 dias completo e conversar com o mentor Aruanã por voz,
+            confirme sua entrada com um Pix único de <strong className="text-foreground">R$ 28,00</strong>.
+          </p>
+        </div>
+
+        <ul className="mt-5 space-y-2 rounded-2xl border border-border/60 bg-background/40 p-4 text-sm text-foreground/90">
+          {[
+            "28 dias de práticas ancestrais guiadas",
+            "Banhos, defumações, meditações e canalizações",
+            "Mentor Aruanã por voz — ilimitado",
+            "Ativação do DMT natural pela prática",
+          ].map((t) => (
+            <li key={t} className="flex gap-2.5">
+              <span className="mt-0.5 text-secondary">✦</span>
+              <span className="leading-snug">{t}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-5 rounded-2xl border border-secondary/30 bg-background/60 p-4">
+          <button
+            type="button"
+            onClick={() => setZoom(true)}
+            className="mx-auto block"
+            aria-label="Ampliar QR Code"
+          >
+            <img
+              src={pix28.url}
+              alt="QR Code Pix R$ 28,00"
+              className="mx-auto h-48 w-48 rounded-lg object-contain"
+            />
+          </button>
+          <div className="mt-3 text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            Chave Pix (copia e cola)
+          </div>
+          <button
+            onClick={copy}
+            className="mt-2 w-full truncate rounded-full border border-secondary/40 px-3 py-2 text-xs text-secondary transition hover:bg-secondary/10"
+          >
+            {copied ? "✓ Copiado" : PIX_KEY}
+          </button>
+          <div className="mt-2 text-center text-[11px] text-muted-foreground">
+            Titular: CAUAN DE JESUS DE QUEIROZ SANTOS · Inter
+          </div>
+        </div>
+
+        <button
+          onClick={onConfirmPaid}
+          className="mt-5 w-full rounded-full px-6 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
+          style={{ background: "var(--gradient-brasa)" }}
+        >
+          ✓ Já paguei — liberar meu acesso
+        </button>
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          Envie o comprovante no WhatsApp cadastrado para confirmação manual.
+        </p>
+      </div>
+
+      {zoom && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 p-4"
+          onClick={() => setZoom(false)}
+        >
+          <img
+            src={pix28.url}
+            alt="QR Code Pix R$ 28,00 ampliado"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl bg-white p-3 object-contain"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Primitives ----------
+
 
 function StepHeader({ step, total, title }: { step: number; total: number; title: string }) {
   return (
