@@ -344,10 +344,6 @@ function Aruana() {
       <PaywallGate
         open={paywallOpen && stage === "journey" && !paid}
         name={name}
-        onConfirmPaid={() => {
-          setPaid(true);
-          setPaywallOpen(false);
-        }}
       />
     </main>
   );
