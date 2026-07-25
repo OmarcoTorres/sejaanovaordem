@@ -663,9 +663,9 @@ function ProductCard({ product, onPay }: { product: Product; onPay: () => void }
   const { badge, price, title, tagline, items, highlight } = product;
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition hover:-translate-y-0.5 ${
+      className={`relative flex h-full flex-col overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition hover:-translate-y-0.5 ${
         highlight
-          ? "border-secondary/70 bg-card shadow-[var(--shadow-sagrado)] md:col-span-2"
+          ? "border-secondary/70 bg-card shadow-[var(--shadow-sagrado)]"
           : "border-border/70 bg-card/60 shadow-[0_10px_30px_-15px_oklch(0.1_0.02_155/0.6)]"
       }`}
       style={
