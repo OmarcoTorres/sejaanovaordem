@@ -238,12 +238,36 @@ function Aruana() {
     return () => clearTimeout(t);
   }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed, paid]);
 
-  // 5s após entrar na jornada sem pagamento, abrir o portão do Desafio.
+  // 5s após entrar na jornada sem pagamento, abrir o portão do Desafio (definitivo).
   useEffect(() => {
     if (stage !== "journey" || paid) return;
     const t = setTimeout(() => setPaywallOpen(true), 5000);
     return () => clearTimeout(t);
   }, [stage, paid]);
+
+  // Enquanto o portão está aberto, consultar liberação manual do banco a cada 8s.
+  useEffect(() => {
+    if (!paywallOpen || paid || !userId) return;
+    let stopped = false;
+    const tick = async () => {
+      const { data } = await supabase
+        .from("journey_progress")
+        .select("paid")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (stopped) return;
+      if (data?.paid) {
+        setPaid(true);
+        setPaywallOpen(false);
+      }
+    };
+    const id = setInterval(tick, 8000);
+    tick();
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [paywallOpen, paid, userId]);
 
   // 3) Save lead once when profile is revealed.
   const leadSavedRef = useRef(false);
