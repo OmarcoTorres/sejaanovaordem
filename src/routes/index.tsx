@@ -304,14 +304,116 @@ function Aruana() {
 // ---------- UI Bits ----------
 
 function StarsBackdrop() {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    let tx = 0, ty = 0;
+    const onMove = (x: number, y: number) => {
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      tx = (x / w - 0.5) * 24;
+      ty = (y / h - 0.5) * 24;
+      if (!raf) {
+        raf = requestAnimationFrame(() => {
+          el.style.setProperty("--px", `${tx}px`);
+          el.style.setProperty("--py", `${ty}px`);
+          raf = 0;
+        });
+      }
+    };
+    const mouse = (e: MouseEvent) => onMove(e.clientX, e.clientY);
+    const touch = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) onMove(t.clientX, t.clientY);
+    };
+    window.addEventListener("mousemove", mouse, { passive: true });
+    window.addEventListener("touchmove", touch, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", mouse);
+      window.removeEventListener("touchmove", touch);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Deterministic seeds so SSR + client render identically
+  const leaves = useMemo(
+    () =>
+      Array.from({ length: 14 }, (_, i) => {
+        const seed = (i * 97) % 100;
+        return {
+          left: (seed * 1.03) % 100,
+          size: 10 + ((seed * 3) % 18),
+          duration: 22 + ((seed * 7) % 28),
+          delay: -((seed * 1.7) % 30),
+          drift: -60 + ((seed * 11) % 120),
+          hue: 110 + ((seed * 5) % 60),
+          rot: (seed * 13) % 360,
+        };
+      }),
+    [],
+  );
+
   return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden opacity-40">
+    <div
+      ref={ref}
+      aria-hidden
+      className="pointer-events-none fixed inset-0 overflow-hidden"
+      style={{ transform: "translate3d(var(--px,0), var(--py,0), 0)", transition: "transform 400ms ease-out" }}
+    >
+      {/* Canopy orbs — sunlight through leaves */}
+      <div
+        className="absolute -top-20 -left-16 h-[55vh] w-[55vh] rounded-full blur-3xl opacity-40"
+        style={{
+          background: "radial-gradient(circle, oklch(0.7 0.16 130 / 0.7), transparent 65%)",
+          animation: "canopy-sway 14s ease-in-out infinite",
+        }}
+      />
+      <div
+        className="absolute -bottom-24 -right-16 h-[60vh] w-[60vh] rounded-full blur-3xl opacity-35"
+        style={{
+          background: "radial-gradient(circle, oklch(0.55 0.14 160 / 0.7), transparent 65%)",
+          animation: "canopy-sway 18s ease-in-out infinite reverse",
+        }}
+      />
+      <div
+        className="absolute top-1/3 left-1/2 h-[35vh] w-[35vh] -translate-x-1/2 rounded-full blur-3xl opacity-25"
+        style={{
+          background: "radial-gradient(circle, oklch(0.82 0.15 105 / 0.6), transparent 70%)",
+          animation: "canopy-sway 22s ease-in-out infinite",
+        }}
+      />
+
+      {/* Floating leaves / spores */}
+      {leaves.map((l, i) => (
+        <span
+          key={i}
+          className="absolute block"
+          style={{
+            left: `${l.left}%`,
+            top: 0,
+            width: `${l.size}px`,
+            height: `${l.size}px`,
+            borderRadius: "60% 20% 60% 20%",
+            background: `radial-gradient(circle at 30% 30%, oklch(0.85 0.12 ${l.hue}), oklch(0.45 0.14 ${l.hue}))`,
+            filter: "blur(0.3px)",
+            opacity: 0.7,
+            transform: `rotate(${l.rot}deg)`,
+            // @ts-expect-error css var
+            "--drift-x": `${l.drift}px`,
+            animation: `leaf-drift ${l.duration}s linear ${l.delay}s infinite`,
+          }}
+        />
+      ))}
+
+      {/* Vignette to keep contrast on mobile */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(1px 1px at 20% 30%, oklch(0.9 0.05 80) 50%, transparent 100%), radial-gradient(1px 1px at 70% 20%, oklch(0.9 0.05 80) 50%, transparent 100%), radial-gradient(1.5px 1.5px at 40% 70%, oklch(0.85 0.08 60) 50%, transparent 100%), radial-gradient(1px 1px at 85% 60%, oklch(0.9 0.05 80) 50%, transparent 100%), radial-gradient(1px 1px at 10% 85%, oklch(0.9 0.05 80) 50%, transparent 100%)",
-          backgroundSize: "600px 600px",
+            "radial-gradient(ellipse at center, transparent 40%, oklch(0.1 0.02 155 / 0.55) 100%)",
         }}
       />
     </div>
