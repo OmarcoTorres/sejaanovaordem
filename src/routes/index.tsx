@@ -557,62 +557,36 @@ const PRODUCTS: Product[] = [
 function Checkouts() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Product | null>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
 
   function openPay(p: Product) {
     setSelected(p);
     setOpen(true);
-  }
-  function scrollBy(dir: 1 | -1) {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
   }
 
   return (
     <section className="mt-20">
       <div className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-secondary">
-          Caminhe mais fundo
+          Caminhe mais fundo na mata
         </p>
         <h2 className="mt-3 font-display text-3xl text-foreground sm:text-4xl">
-          Escolha sua próxima passagem
+          Quatro passagens. Um mesmo rio.
         </h2>
         <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-          Deslize para conhecer cada oferta. Ao escolher, você abre o Pix com QR
-          Code em nome de Cauan Pataxó.
+          Cada oferta abre um Pix com QR Code em nome de Cauan Pataxó — direto,
+          sem intermediários. Escolha por onde entrar.
         </p>
       </div>
 
-      <div className="relative mt-8">
-        <div
-          ref={scrollerRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {PRODUCTS.map((p) => (
-            <ProductCard key={p.title} product={p} onPay={() => openPay(p)} />
-          ))}
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-3">
-          <button
-            aria-label="Anterior"
-            onClick={() => scrollBy(-1)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-card/70 text-secondary transition hover:bg-secondary/10"
-          >
-            ‹
-          </button>
-          <span className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-            {PRODUCTS.length} ofertas
-          </span>
-          <button
-            aria-label="Próximo"
-            onClick={() => scrollBy(1)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-card/70 text-secondary transition hover:bg-secondary/10"
-          >
-            ›
-          </button>
-        </div>
+      <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2">
+        {PRODUCTS.map((p) => (
+          <ProductCard key={p.title} product={p} onPay={() => openPay(p)} />
+        ))}
       </div>
+
+      <p className="mx-auto mt-6 max-w-md text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+        Pagamentos processados via banco Inter · Titular Cauan Pataxó
+      </p>
 
       <PixDialog
         open={open}
@@ -627,39 +601,65 @@ function ProductCard({ product, onPay }: { product: Product; onPay: () => void }
   const { badge, price, title, tagline, items, highlight } = product;
   return (
     <article
-      className={`relative flex w-[85%] shrink-0 snap-center flex-col overflow-hidden rounded-3xl border p-6 shadow-[var(--shadow-sagrado)] sm:w-[420px] ${
-        highlight ? "border-secondary/60 bg-card" : "border-border bg-card/70"
+      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition hover:-translate-y-0.5 ${
+        highlight
+          ? "border-secondary/70 bg-card shadow-[var(--shadow-sagrado)] md:col-span-2"
+          : "border-border/70 bg-card/60 shadow-[0_10px_30px_-15px_oklch(0.1_0.02_155/0.6)]"
       }`}
+      style={
+        highlight
+          ? {
+              backgroundImage:
+                "radial-gradient(ellipse at top right, oklch(0.55 0.14 155 / 0.28), transparent 60%), radial-gradient(ellipse at bottom left, oklch(0.82 0.14 105 / 0.18), transparent 55%)",
+            }
+          : undefined
+      }
     >
       {highlight && (
-        <div className="absolute right-4 top-4 rounded-full bg-secondary px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-secondary-foreground">
-          Mais escolhido
+        <div className="absolute right-4 top-4 rounded-full border border-secondary/60 bg-secondary/20 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-secondary">
+          ★ Escolha do Guia
         </div>
       )}
-      <div className="text-[11px] uppercase tracking-[0.25em] text-secondary">
-        {badge}
+      <div className="flex items-baseline gap-2">
+        <span className="text-lg text-secondary">✦</span>
+        <span className="text-[11px] uppercase tracking-[0.25em] text-secondary">
+          {badge}
+        </span>
       </div>
-      <div className="mt-2 font-display text-4xl text-foreground">{price}</div>
-      <div className="mt-1 font-display text-xl text-foreground/90">{title}</div>
+      <div className="mt-3 flex items-end gap-3">
+        <div className="font-display text-4xl leading-none text-foreground sm:text-5xl">
+          {price}
+        </div>
+      </div>
+      <div className="mt-2 font-display text-xl text-foreground/95 sm:text-2xl">
+        {title}
+      </div>
       <p className="mt-2 text-sm italic text-muted-foreground">{tagline}</p>
-      <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+
+      <div className="mt-4 h-px w-12 bg-secondary/40" />
+
+      <ul className="mt-4 flex-1 space-y-2 text-sm text-foreground/85">
         {items.map((it) => (
-          <li key={it} className="flex gap-2">
-            <span className="text-secondary">✦</span>
-            <span>{it}</span>
+          <li key={it} className="flex gap-2.5">
+            <span className="mt-0.5 text-secondary">✦</span>
+            <span className="leading-snug">{it}</span>
           </li>
         ))}
       </ul>
-      <div className="mt-6">
-        <button
-          onClick={onPay}
-          className="w-full rounded-full bg-gradient-to-r from-[oklch(0.68_0.16_40)] to-[oklch(0.78_0.13_80)] px-5 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
-        >
-          Pagar com Pix — {price}
-        </button>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          QR Code e chave copia-e-cola aparecem em seguida
-        </p>
+
+      <button
+        onClick={onPay}
+        className="mt-6 w-full rounded-full px-5 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
+        style={{ background: "var(--gradient-brasa)" }}
+      >
+        Pagar com Pix — {price}
+      </button>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        QR Code e chave copia-e-cola aparecem em seguida
+      </p>
+    </article>
+  );
+}
       </div>
     </article>
   );
