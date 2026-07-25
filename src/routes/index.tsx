@@ -225,6 +225,7 @@ function Aruana() {
       day,
       answers: answers as unknown as import("@/integrations/supabase/types").Json,
       completed: completed as unknown as import("@/integrations/supabase/types").Json,
+      paid,
     };
     const t = setTimeout(() => {
       supabase
@@ -235,7 +236,14 @@ function Aruana() {
         });
     }, 400);
     return () => clearTimeout(t);
-  }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed]);
+  }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed, paid]);
+
+  // 5s após entrar na jornada sem pagamento, abrir o portão do Desafio.
+  useEffect(() => {
+    if (stage !== "journey" || paid) return;
+    const t = setTimeout(() => setPaywallOpen(true), 5000);
+    return () => clearTimeout(t);
+  }, [stage, paid]);
 
   // 3) Save lead once when profile is revealed.
   const leadSavedRef = useRef(false);
