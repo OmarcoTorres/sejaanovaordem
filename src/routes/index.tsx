@@ -127,6 +127,8 @@ const DAILY_PRACTICES = [
 
 type Stage = "welcome" | "onboarding" | "quiz" | "reveal" | "journey";
 
+const STAGE_ORDER: Stage[] = ["welcome", "onboarding", "quiz", "reveal", "journey"];
+
 function Aruana() {
   const [stage, setStage] = useState<Stage>("welcome");
   const [name, setName] = useState("");
@@ -137,6 +139,8 @@ function Aruana() {
   const [completed, setCompleted] = useState<Record<number, boolean>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [paid, setPaid] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   const profile = useMemo<ProfileKey | null>(() => {
     if (answers.length < QUESTIONS.length) return null;
@@ -144,6 +148,11 @@ function Aruana() {
     answers.forEach((a) => (counts[a] = (counts[a] || 0) + 1));
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as ProfileKey;
   }, [answers]);
+
+  function goBack() {
+    const idx = STAGE_ORDER.indexOf(stage);
+    if (idx > 0) setStage(STAGE_ORDER[idx - 1]);
+  }
 
   // 1) Ensure a persistent (anonymous) session and load saved progress.
   useEffect(() => {
