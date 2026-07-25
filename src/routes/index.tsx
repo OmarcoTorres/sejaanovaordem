@@ -991,6 +991,8 @@ function Journey({
   setDay,
   completed,
   setCompleted,
+  paid,
+  onRequestUnlock,
 }: {
   name: string;
   intention: string;
@@ -999,6 +1001,8 @@ function Journey({
   setDay: (n: number) => void;
   completed: Record<number, boolean>;
   setCompleted: (c: Record<number, boolean>) => void;
+  paid: boolean;
+  onRequestUnlock: () => void;
 }) {
   const p = PROFILES[profile];
   const phase = PHASES.find((ph) => day >= ph.range[0] && day <= ph.range[1])!;
