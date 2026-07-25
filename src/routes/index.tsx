@@ -1051,7 +1051,13 @@ function Journey({
         </div>
 
         <button
-          onClick={() => setCompleted({ ...completed, [day]: !done })}
+          onClick={() => {
+            if (!paid) {
+              onRequestUnlock();
+              return;
+            }
+            setCompleted({ ...completed, [day]: !done });
+          }}
           className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
             done
               ? "bg-secondary text-secondary-foreground"
@@ -1059,7 +1065,7 @@ function Journey({
           }`}
           style={done ? undefined : { background: "var(--gradient-brasa)" }}
         >
-          {done ? "✓ Prática registrada" : "Marcar prática do dia"}
+          {!paid ? "🔒 Liberar acesso ao Desafio" : done ? "✓ Prática registrada" : "Marcar prática do dia"}
         </button>
 
         <div className="mt-4 flex items-center justify-between text-sm">
