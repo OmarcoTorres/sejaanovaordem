@@ -238,12 +238,36 @@ function Aruana() {
     return () => clearTimeout(t);
   }, [loaded, userId, name, whatsapp, intention, profile, stage, day, answers, completed, paid]);
 
-  // 5s após entrar na jornada sem pagamento, abrir o portão do Desafio.
+  // 5s após entrar na jornada sem pagamento, abrir o portão do Desafio (definitivo).
   useEffect(() => {
     if (stage !== "journey" || paid) return;
     const t = setTimeout(() => setPaywallOpen(true), 5000);
     return () => clearTimeout(t);
   }, [stage, paid]);
+
+  // Enquanto o portão está aberto, consultar liberação manual do banco a cada 8s.
+  useEffect(() => {
+    if (!paywallOpen || paid || !userId) return;
+    let stopped = false;
+    const tick = async () => {
+      const { data } = await supabase
+        .from("journey_progress")
+        .select("paid")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (stopped) return;
+      if (data?.paid) {
+        setPaid(true);
+        setPaywallOpen(false);
+      }
+    };
+    const id = setInterval(tick, 8000);
+    tick();
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [paywallOpen, paid, userId]);
 
   // 3) Save lead once when profile is revealed.
   const leadSavedRef = useRef(false);
@@ -320,10 +344,6 @@ function Aruana() {
       <PaywallGate
         open={paywallOpen && stage === "journey" && !paid}
         name={name}
-        onConfirmPaid={() => {
-          setPaid(true);
-          setPaywallOpen(false);
-        }}
       />
     </main>
   );
@@ -620,7 +640,7 @@ function Checkouts() {
         </p>
       </div>
 
-      <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="mt-10 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2">
         {PRODUCTS.map((p) => (
           <ProductCard key={p.title} product={p} onPay={() => openPay(p)} />
         ))}
@@ -643,9 +663,9 @@ function ProductCard({ product, onPay }: { product: Product; onPay: () => void }
   const { badge, price, title, tagline, items, highlight } = product;
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition hover:-translate-y-0.5 ${
+      className={`relative flex h-full flex-col overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition hover:-translate-y-0.5 ${
         highlight
-          ? "border-secondary/70 bg-card shadow-[var(--shadow-sagrado)] md:col-span-2"
+          ? "border-secondary/70 bg-card shadow-[var(--shadow-sagrado)]"
           : "border-border/70 bg-card/60 shadow-[0_10px_30px_-15px_oklch(0.1_0.02_155/0.6)]"
       }`}
       style={
@@ -1466,11 +1486,9 @@ function VoiceMentor({
 function PaywallGate({
   open,
   name,
-  onConfirmPaid,
 }: {
   open: boolean;
   name: string;
-  onConfirmPaid: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(false);
@@ -1556,17 +1574,23 @@ function PaywallGate({
           </div>
         </div>
 
-        <button
-          onClick={onConfirmPaid}
-          className="mt-5 w-full rounded-full px-6 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
-          style={{ background: "var(--gradient-brasa)" }}
-        >
-          ✓ Já paguei — liberar meu acesso
-        </button>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Envie o comprovante no WhatsApp cadastrado para confirmação manual.
-        </p>
+        <div className="mt-5 rounded-2xl border border-secondary/40 bg-secondary/5 p-4 text-center">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-secondary">
+            Liberação manual
+          </p>
+          <p className="mt-2 text-sm text-foreground/90">
+            Após o Pix, envie o comprovante no WhatsApp <strong>+55 (revelado no cadastro)</strong> em nome de <strong>Cauan Pataxó</strong>.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Seu acesso é liberado manualmente pelo Guia. Esta tela permanecerá aberta até a liberação — o app verifica a cada instante.
+          </p>
+          <div className="mt-3 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-secondary">
+            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-secondary" />
+            aguardando liberação do guia
+          </div>
+        </div>
       </div>
+
 
       {zoom && (
         <div
