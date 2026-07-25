@@ -1486,11 +1486,9 @@ function VoiceMentor({
 function PaywallGate({
   open,
   name,
-  onConfirmPaid,
 }: {
   open: boolean;
   name: string;
-  onConfirmPaid: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(false);
