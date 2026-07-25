@@ -86,8 +86,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Aruanã — guia diário de alinhamento espiritual e pessoal" },
       { name: "twitter:description", content: "Segura onda" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7bc5d2f3-522a-48b6-8916-7dfbf6f0b8dc/id-preview-e146be3a--ce3d60a7-56ae-4a83-a7ff-5c532989fe13.lovable.app-1784813961666.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7bc5d2f3-522a-48b6-8916-7dfbf6f0b8dc/id-preview-e146be3a--ce3d60a7-56ae-4a83-a7ff-5c532989fe13.lovable.app-1784813961666.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/313f4e58-efcd-47fc-b683-b39f0fc2cd38" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/313f4e58-efcd-47fc-b683-b39f0fc2cd38" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
