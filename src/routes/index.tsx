@@ -381,7 +381,89 @@ function Welcome({ onStart }: { onStart: () => void }) {
   );
 }
 
+type Product = {
+  badge: string;
+  price: string;
+  priceNumber: string;
+  title: string;
+  tagline: string;
+  items: string[];
+  qr?: string;
+  highlight?: boolean;
+};
+
+const PRODUCTS: Product[] = [
+  {
+    badge: "Conversa 1:1",
+    price: "R$ 9,99",
+    priceNumber: "9,99",
+    title: "Conversa com o Guia Pataxó",
+    tagline: "Uma escuta ancestral para atravessar sua semana.",
+    items: [
+      "1 sessão online por chamada de voz",
+      "Escuta e leitura do seu momento",
+      "Direcionamento prático para a semana",
+    ],
+    qr: pix999.url,
+  },
+  {
+    badge: "Mediunidade",
+    price: "R$ 9,99",
+    priceNumber: "9,99",
+    title: "Call de Alinhamento com os Orixás",
+    tagline: "30 minutos para reconectar sua corrente espiritual.",
+    items: [
+      "Sessão de 30 min por chamada",
+      "Desenvolvimento mediúnico guiado",
+      "Orientação espiritual e alinhamento com os Orixás",
+    ],
+    qr: pix999.url,
+  },
+  {
+    badge: "Grupo — Novo",
+    price: "R$ 19,99",
+    priceNumber: "19,99",
+    title: "Grupo Desafio 28 Dias",
+    tagline: "A corrente coletiva do desafio — só o acesso ao grupo.",
+    items: [
+      "Acesso ao grupo fechado dos 28 dias",
+      "Banhos, defumações e orações guiadas",
+      "Meditações, trabalhos de limpeza e canalizações",
+      "Ativação do DMT natural pela prática ancestral",
+    ],
+  },
+  {
+    badge: "Venda Cheia",
+    price: "R$ 28,00",
+    priceNumber: "28,00",
+    title: "Jornada 28 Dias — Experiência Completa",
+    tagline: "Tudo do grupo + acompanhamento e clube do livro.",
+    items: [
+      "Tudo do Grupo Desafio 28 Dias",
+      "Acompanhamento semanal com o Guia",
+      "Clube do Livro ancestral (mensal)",
+      "Práticas guiadas dia a dia no app",
+    ],
+    qr: pix28.url,
+    highlight: true,
+  },
+];
+
 function Checkouts() {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Product | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  function openPay(p: Product) {
+    setSelected(p);
+    setOpen(true);
+  }
+  function scrollBy(dir: 1 | -1) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
+  }
+
   return (
     <section className="mt-20">
       <div className="text-center">
@@ -392,72 +474,55 @@ function Checkouts() {
           Escolha sua próxima passagem
         </h2>
         <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-          Pague por Pix — chave e QR Code em nome de Cauan Pataxó. Após o
-          pagamento, envie o comprovante pelo WhatsApp cadastrado para liberar o
-          acesso.
+          Deslize para conhecer cada oferta. Ao escolher, você abre o Pix com QR
+          Code em nome de Cauan Pataxó.
         </p>
       </div>
-      <div className="mt-8 grid gap-5 sm:grid-cols-2">
-        <CheckoutCard
-          badge="Conversa Online"
-          price="R$ 9,99"
-          title="Conversa com o Guia Pataxó"
-          items={[
-            "1 sessão online por chamada de voz",
-            "Escuta ancestral e prática guiada",
-            "Direcionamento para sua semana",
-          ]}
-          qr={pix999.url}
-          pixKey="39431215-005e-4a2f-a647-cf07e615cccc"
-        />
-        <CheckoutCard
-          badge="Desafio Completo"
-          price="R$ 28,00"
-          title="Jornada 28 Dias + Clube do Livro"
-          items={[
-            "Acesso completo aos 28 dias guiados",
-            "Acompanhamento semanal com o Guia",
-            "Clube do Livro ancestral (mensal)",
-          ]}
-          qr={pix28.url}
-          pixKey="39431215-005e-4a2f-a647-cf07e615cccc"
-          highlight
-        />
+
+      <div className="relative mt-8">
+        <div
+          ref={scrollerRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {PRODUCTS.map((p) => (
+            <ProductCard key={p.title} product={p} onPay={() => openPay(p)} />
+          ))}
+        </div>
+        <div className="mt-3 flex items-center justify-center gap-3">
+          <button
+            aria-label="Anterior"
+            onClick={() => scrollBy(-1)}
+            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-card/70 text-secondary transition hover:bg-secondary/10"
+          >
+            ‹
+          </button>
+          <span className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+            {PRODUCTS.length} ofertas
+          </span>
+          <button
+            aria-label="Próximo"
+            onClick={() => scrollBy(1)}
+            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-card/70 text-secondary transition hover:bg-secondary/10"
+          >
+            ›
+          </button>
+        </div>
       </div>
+
+      <PixDialog
+        open={open}
+        onOpenChange={setOpen}
+        product={selected}
+      />
     </section>
   );
 }
 
-function CheckoutCard({
-  badge,
-  price,
-  title,
-  items,
-  qr,
-  pixKey,
-  highlight,
-}: {
-  badge: string;
-  price: string;
-  title: string;
-  items: string[];
-  qr: string;
-  pixKey: string;
-  highlight?: boolean;
-}) {
-  const [copied, setCopied] = useState(false);
-  function copy() {
-    navigator.clipboard?.writeText(pixKey).then(
-      () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1800);
-      },
-      () => {},
-    );
-  }
+function ProductCard({ product, onPay }: { product: Product; onPay: () => void }) {
+  const { badge, price, title, tagline, items, highlight } = product;
   return (
-    <div
-      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 shadow-[var(--shadow-sagrado)] ${
+    <article
+      className={`relative flex w-[85%] shrink-0 snap-center flex-col overflow-hidden rounded-3xl border p-6 shadow-[var(--shadow-sagrado)] sm:w-[420px] ${
         highlight ? "border-secondary/60 bg-card" : "border-border bg-card/70"
       }`}
     >
@@ -469,8 +534,9 @@ function CheckoutCard({
       <div className="text-[11px] uppercase tracking-[0.25em] text-secondary">
         {badge}
       </div>
-      <div className="mt-1 font-display text-3xl text-foreground">{price}</div>
-      <div className="mt-1 font-display text-lg text-foreground/90">{title}</div>
+      <div className="mt-2 font-display text-4xl text-foreground">{price}</div>
+      <div className="mt-1 font-display text-xl text-foreground/90">{title}</div>
+      <p className="mt-2 text-sm italic text-muted-foreground">{tagline}</p>
       <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
         {items.map((it) => (
           <li key={it} className="flex gap-2">
@@ -479,27 +545,144 @@ function CheckoutCard({
           </li>
         ))}
       </ul>
-      <div className="mt-5 flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-background/60 p-4">
-        <img
-          src={qr}
-          alt={`QR Code Pix ${price}`}
-          className="h-44 w-44 rounded-lg object-contain"
-          loading="lazy"
-        />
-        <div className="w-full text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Chave Pix (copia e cola)
-        </div>
+      <div className="mt-6">
         <button
-          onClick={copy}
-          className="w-full truncate rounded-full border border-secondary/40 px-3 py-2 text-xs text-secondary transition hover:bg-secondary/10"
+          onClick={onPay}
+          className="w-full rounded-full bg-gradient-to-r from-[oklch(0.68_0.16_40)] to-[oklch(0.78_0.13_80)] px-5 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
         >
-          {copied ? "✓ Copiado" : pixKey}
+          Pagar com Pix — {price}
         </button>
-        <div className="text-[11px] text-muted-foreground">
-          Titular: CAUAN DE JESUS DE QUEIROZ SANTOS · Inter
-        </div>
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          QR Code e chave copia-e-cola aparecem em seguida
+        </p>
       </div>
-    </div>
+    </article>
+  );
+}
+
+const PIX_KEY = "39431215-005e-4a2f-a647-cf07e615cccc";
+
+function PixDialog({
+  open,
+  onOpenChange,
+  product,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  product: Product | null;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [zoom, setZoom] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setCopied(false);
+      setZoom(false);
+    }
+  }, [open]);
+
+  function copy() {
+    navigator.clipboard?.writeText(PIX_KEY).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      },
+      () => {},
+    );
+  }
+
+  if (!product) return null;
+
+  return (
+    <>
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => onOpenChange(false)}
+        >
+          <div
+            className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-secondary/40 bg-card p-6 shadow-[var(--shadow-sagrado)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => onOpenChange(false)}
+              aria-label="Fechar"
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-border/60 text-secondary transition hover:bg-secondary/10"
+            >
+              ×
+            </button>
+            <div className="text-[11px] uppercase tracking-[0.25em] text-secondary">
+              {product.badge}
+            </div>
+            <h3 className="mt-1 font-display text-2xl text-foreground">
+              {product.title}
+            </h3>
+            <div className="mt-1 font-display text-3xl text-foreground">
+              {product.price}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-border/60 bg-background/60 p-4">
+              {product.qr ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setZoom(true)}
+                    className="group relative mx-auto block"
+                    aria-label="Ampliar QR Code"
+                  >
+                    <img
+                      src={product.qr}
+                      alt={`QR Code Pix ${product.price}`}
+                      className="mx-auto h-56 w-56 rounded-lg object-contain transition group-hover:opacity-90"
+                    />
+                    <span className="mt-2 block text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Toque para ampliar
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <div className="rounded-xl border border-dashed border-secondary/40 bg-background/50 p-4 text-center text-sm text-muted-foreground">
+                  Este valor não tem QR pré-gerado. Use a chave Pix abaixo e
+                  digite <strong className="text-foreground">{product.price}</strong>{" "}
+                  no app do seu banco.
+                </div>
+              )}
+
+              <div className="mt-4 text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                Chave Pix (copia e cola)
+              </div>
+              <button
+                onClick={copy}
+                className="mt-2 w-full truncate rounded-full border border-secondary/40 px-3 py-2 text-xs text-secondary transition hover:bg-secondary/10"
+              >
+                {copied ? "✓ Copiado" : PIX_KEY}
+              </button>
+              <div className="mt-3 text-center text-[11px] text-muted-foreground">
+                Titular: CAUAN DE JESUS DE QUEIROZ SANTOS · Inter
+              </div>
+            </div>
+
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              Após pagar, envie o comprovante pelo WhatsApp cadastrado para
+              liberar seu acesso.
+            </p>
+          </div>
+
+          {zoom && product.qr && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4"
+              onClick={() => setZoom(false)}
+            >
+              <img
+                src={product.qr}
+                alt={`QR Code Pix ${product.price} ampliado`}
+                className="max-h-[90vh] max-w-[90vw] rounded-xl bg-white p-3 object-contain"
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
