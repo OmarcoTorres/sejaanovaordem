@@ -23,6 +23,8 @@ export type Database = {
           id: string
           intention: string | null
           name: string | null
+          paid: boolean
+          paid_at: string | null
           profile: string | null
           stage: string
           updated_at: string
@@ -37,6 +39,8 @@ export type Database = {
           id?: string
           intention?: string | null
           name?: string | null
+          paid?: boolean
+          paid_at?: string | null
           profile?: string | null
           stage?: string
           updated_at?: string
@@ -51,6 +55,8 @@ export type Database = {
           id?: string
           intention?: string | null
           name?: string | null
+          paid?: boolean
+          paid_at?: string | null
           profile?: string | null
           stage?: string
           updated_at?: string
