@@ -660,10 +660,6 @@ function ProductCard({ product, onPay }: { product: Product; onPay: () => void }
     </article>
   );
 }
-      </div>
-    </article>
-  );
-}
 
 const PIX_KEY = "39431215-005e-4a2f-a647-cf07e615cccc";
 
