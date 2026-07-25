@@ -274,7 +274,7 @@ function Aruana() {
     <main className="min-h-screen">
       <StarsBackdrop />
       <div className="relative mx-auto max-w-2xl px-5 py-10 sm:py-16">
-        <Header />
+        <Header canGoBack={STAGE_ORDER.indexOf(stage) > 0} onBack={goBack} />
         {stage === "welcome" && <Welcome onStart={() => setStage("onboarding")} />}
         {stage === "onboarding" && (
           <Onboarding
@@ -311,13 +311,24 @@ function Aruana() {
             setDay={setDay}
             completed={completed}
             setCompleted={setCompleted}
+            paid={paid}
+            onRequestUnlock={() => setPaywallOpen(true)}
           />
         )}
         <Footer />
       </div>
+      <PaywallGate
+        open={paywallOpen && stage === "journey" && !paid}
+        name={name}
+        onConfirmPaid={() => {
+          setPaid(true);
+          setPaywallOpen(false);
+        }}
+      />
     </main>
   );
 }
+
 
 // ---------- UI Bits ----------
 
