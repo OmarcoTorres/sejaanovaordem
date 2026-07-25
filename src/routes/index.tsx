@@ -1574,17 +1574,23 @@ function PaywallGate({
           </div>
         </div>
 
-        <button
-          onClick={onConfirmPaid}
-          className="mt-5 w-full rounded-full px-6 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
-          style={{ background: "var(--gradient-brasa)" }}
-        >
-          ✓ Já paguei — liberar meu acesso
-        </button>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Envie o comprovante no WhatsApp cadastrado para confirmação manual.
-        </p>
+        <div className="mt-5 rounded-2xl border border-secondary/40 bg-secondary/5 p-4 text-center">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-secondary">
+            Liberação manual
+          </p>
+          <p className="mt-2 text-sm text-foreground/90">
+            Após o Pix, envie o comprovante no WhatsApp <strong>+55 (revelado no cadastro)</strong> em nome de <strong>Cauan Pataxó</strong>.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Seu acesso é liberado manualmente pelo Guia. Esta tela permanecerá aberta até a liberação — o app verifica a cada instante.
+          </p>
+          <div className="mt-3 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-secondary">
+            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-secondary" />
+            aguardando liberação do guia
+          </div>
+        </div>
       </div>
+
 
       {zoom && (
         <div
