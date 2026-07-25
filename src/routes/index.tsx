@@ -449,17 +449,30 @@ function StarsBackdrop() {
   );
 }
 
-function Header() {
+function Header({ canGoBack, onBack }: { canGoBack: boolean; onBack: () => void }) {
   return (
     <div className="mb-10 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-secondary/50 bg-primary/20 text-secondary">
-          <span className="text-lg">✦</span>
-        </div>
-        <div>
-          <div className="font-display text-xl leading-none text-foreground">Aruanã</div>
-          <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            guia diário
+      <div className="flex items-center gap-2">
+        {canGoBack ? (
+          <button
+            onClick={onBack}
+            aria-label="Voltar"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-card/50 text-secondary backdrop-blur-sm transition hover:border-secondary/60 hover:bg-card"
+          >
+            <span className="text-lg leading-none">←</span>
+          </button>
+        ) : (
+          <div className="h-10 w-10" aria-hidden />
+        )}
+        <div className="flex items-center gap-3 pl-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-secondary/50 bg-primary/20 text-secondary">
+            <span className="text-lg">✦</span>
+          </div>
+          <div>
+            <div className="font-display text-xl leading-none text-foreground">Aruanã</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              guia diário
+            </div>
           </div>
         </div>
       </div>
