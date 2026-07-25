@@ -192,6 +192,7 @@ function Aruana() {
             ? (prog.completed as Record<number, boolean>)
             : {},
         );
+        setPaid(!!(prog as { paid?: boolean }).paid);
         const savedStage = (prog.stage as Stage) ?? "welcome";
         if (prog.profile && (savedStage === "welcome" || savedStage === "onboarding" || savedStage === "quiz")) {
           setStage("journey");
