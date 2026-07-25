@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { askAruana } from "@/lib/aruana.functions";
 import pix999 from "@/assets/pix-999.jpeg.asset.json";
 import pix28 from "@/assets/pix-28.jpeg.asset.json";
+import pix197 from "@/assets/pix-197.jpeg.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Aruana,
@@ -303,14 +304,116 @@ function Aruana() {
 // ---------- UI Bits ----------
 
 function StarsBackdrop() {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    let tx = 0, ty = 0;
+    const onMove = (x: number, y: number) => {
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      tx = (x / w - 0.5) * 24;
+      ty = (y / h - 0.5) * 24;
+      if (!raf) {
+        raf = requestAnimationFrame(() => {
+          el.style.setProperty("--px", `${tx}px`);
+          el.style.setProperty("--py", `${ty}px`);
+          raf = 0;
+        });
+      }
+    };
+    const mouse = (e: MouseEvent) => onMove(e.clientX, e.clientY);
+    const touch = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) onMove(t.clientX, t.clientY);
+    };
+    window.addEventListener("mousemove", mouse, { passive: true });
+    window.addEventListener("touchmove", touch, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", mouse);
+      window.removeEventListener("touchmove", touch);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Deterministic seeds so SSR + client render identically
+  const leaves = useMemo(
+    () =>
+      Array.from({ length: 14 }, (_, i) => {
+        const seed = (i * 97) % 100;
+        return {
+          left: (seed * 1.03) % 100,
+          size: 10 + ((seed * 3) % 18),
+          duration: 22 + ((seed * 7) % 28),
+          delay: -((seed * 1.7) % 30),
+          drift: -60 + ((seed * 11) % 120),
+          hue: 110 + ((seed * 5) % 60),
+          rot: (seed * 13) % 360,
+        };
+      }),
+    [],
+  );
+
   return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden opacity-40">
+    <div
+      ref={ref}
+      aria-hidden
+      className="pointer-events-none fixed inset-0 overflow-hidden"
+      style={{ transform: "translate3d(var(--px,0), var(--py,0), 0)", transition: "transform 400ms ease-out" }}
+    >
+      {/* Canopy orbs — sunlight through leaves */}
+      <div
+        className="absolute -top-20 -left-16 h-[55vh] w-[55vh] rounded-full blur-3xl opacity-40"
+        style={{
+          background: "radial-gradient(circle, oklch(0.7 0.16 130 / 0.7), transparent 65%)",
+          animation: "canopy-sway 14s ease-in-out infinite",
+        }}
+      />
+      <div
+        className="absolute -bottom-24 -right-16 h-[60vh] w-[60vh] rounded-full blur-3xl opacity-35"
+        style={{
+          background: "radial-gradient(circle, oklch(0.55 0.14 160 / 0.7), transparent 65%)",
+          animation: "canopy-sway 18s ease-in-out infinite reverse",
+        }}
+      />
+      <div
+        className="absolute top-1/3 left-1/2 h-[35vh] w-[35vh] -translate-x-1/2 rounded-full blur-3xl opacity-25"
+        style={{
+          background: "radial-gradient(circle, oklch(0.82 0.15 105 / 0.6), transparent 70%)",
+          animation: "canopy-sway 22s ease-in-out infinite",
+        }}
+      />
+
+      {/* Floating leaves / spores */}
+      {leaves.map((l, i) => (
+        <span
+          key={i}
+          className="absolute block"
+          style={{
+            left: `${l.left}%`,
+            top: 0,
+            width: `${l.size}px`,
+            height: `${l.size}px`,
+            borderRadius: "60% 20% 60% 20%",
+            background: `radial-gradient(circle at 30% 30%, oklch(0.85 0.12 ${l.hue}), oklch(0.45 0.14 ${l.hue}))`,
+            filter: "blur(0.3px)",
+            opacity: 0.7,
+            transform: `rotate(${l.rot}deg)`,
+            // @ts-expect-error css var
+            "--drift-x": `${l.drift}px`,
+            animation: `leaf-drift ${l.duration}s linear ${l.delay}s infinite`,
+          }}
+        />
+      ))}
+
+      {/* Vignette to keep contrast on mobile */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(1px 1px at 20% 30%, oklch(0.9 0.05 80) 50%, transparent 100%), radial-gradient(1px 1px at 70% 20%, oklch(0.9 0.05 80) 50%, transparent 100%), radial-gradient(1.5px 1.5px at 40% 70%, oklch(0.85 0.08 60) 50%, transparent 100%), radial-gradient(1px 1px at 85% 60%, oklch(0.9 0.05 80) 50%, transparent 100%), radial-gradient(1px 1px at 10% 85%, oklch(0.9 0.05 80) 50%, transparent 100%)",
-          backgroundSize: "600px 600px",
+            "radial-gradient(ellipse at center, transparent 40%, oklch(0.1 0.02 155 / 0.55) 100%)",
         }}
       />
     </div>
@@ -394,120 +497,96 @@ type Product = {
 
 const PRODUCTS: Product[] = [
   {
-    badge: "Conversa 1:1",
+    badge: "Consulta 1:1",
     price: "R$ 9,99",
     priceNumber: "9,99",
-    title: "Conversa com o Guia Pataxó",
-    tagline: "Uma escuta ancestral para atravessar sua semana.",
+    title: "Consulta & Direcionamento Espiritual",
+    tagline: "30 minutos por chamada para atravessar sua semana com clareza.",
     items: [
-      "1 sessão online por chamada de voz",
-      "Escuta e leitura do seu momento",
+      "Sessão de 30 min por chamada de voz",
+      "Desenvolvimento mediúnico guiado",
+      "Orientação e alinhamento com os Orixás",
       "Direcionamento prático para a semana",
     ],
     qr: pix999.url,
   },
   {
-    badge: "Mediunidade",
-    price: "R$ 9,99",
-    priceNumber: "9,99",
-    title: "Call de Alinhamento com os Orixás",
-    tagline: "30 minutos para reconectar sua corrente espiritual.",
+    badge: "Foco Principal · Desafio",
+    price: "R$ 28,00",
+    priceNumber: "28,00",
+    title: "Desafio 28 Dias",
+    tagline: "A jornada ancestral completa — do primeiro banho ao DMT natural.",
     items: [
-      "Sessão de 30 min por chamada",
-      "Desenvolvimento mediúnico guiado",
-      "Orientação espiritual e alinhamento com os Orixás",
-    ],
-    qr: pix999.url,
-  },
-  {
-    badge: "Grupo — Novo",
-    price: "R$ 19,99",
-    priceNumber: "19,99",
-    title: "Grupo Desafio 28 Dias",
-    tagline: "A corrente coletiva do desafio — só o acesso ao grupo.",
-    items: [
-      "Acesso ao grupo fechado dos 28 dias",
       "Banhos, defumações e orações guiadas",
       "Meditações, trabalhos de limpeza e canalizações",
       "Ativação do DMT natural pela prática ancestral",
-    ],
-  },
-  {
-    badge: "Venda Cheia",
-    price: "R$ 28,00",
-    priceNumber: "28,00",
-    title: "Jornada 28 Dias — Experiência Completa",
-    tagline: "Tudo do grupo + acompanhamento e clube do livro.",
-    items: [
-      "Tudo do Grupo Desafio 28 Dias",
-      "Acompanhamento semanal com o Guia",
-      "Clube do Livro ancestral (mensal)",
-      "Práticas guiadas dia a dia no app",
+      "Práticas diárias no app + grupo fechado dos 28 dias",
     ],
     qr: pix28.url,
     highlight: true,
+  },
+  {
+    badge: "Add-on · Clube",
+    price: "+ R$ 19,99",
+    priceNumber: "19,99",
+    title: "Clube do Livro VIP",
+    tagline: "Círculo VIP de estudo mensal para quem já entrou no Desafio.",
+    items: [
+      "Acesso ao grupo VIP Clube do Livro",
+      "Encontro mensal com leituras ancestrais",
+      "Materiais de estudo aprofundado",
+      "Adicional ao Desafio 28 dias",
+    ],
+  },
+  {
+    badge: "Mentoria Alquimista",
+    price: "R$ 197",
+    priceNumber: "197,00",
+    title: "Consultoria & Acompanhamento Semanal",
+    tagline: "Até 3 alinhamentos por semana — projetos, tecnologia e Hermetismo aplicado.",
+    items: [
+      "Até 3 alinhamentos por semana com o Guia",
+      "Desenvolvimento de projetos e tecnologia",
+      "Estudos aprofundados e leituras dirigidas",
+      "Aplicação viva das 7 Leis Herméticas",
+    ],
+    qr: pix197.url,
   },
 ];
 
 function Checkouts() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Product | null>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
 
   function openPay(p: Product) {
     setSelected(p);
     setOpen(true);
-  }
-  function scrollBy(dir: 1 | -1) {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
   }
 
   return (
     <section className="mt-20">
       <div className="text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-secondary">
-          Caminhe mais fundo
+          Caminhe mais fundo na mata
         </p>
         <h2 className="mt-3 font-display text-3xl text-foreground sm:text-4xl">
-          Escolha sua próxima passagem
+          Quatro passagens. Um mesmo rio.
         </h2>
         <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-          Deslize para conhecer cada oferta. Ao escolher, você abre o Pix com QR
-          Code em nome de Cauan Pataxó.
+          Cada oferta abre um Pix com QR Code em nome de Cauan Pataxó — direto,
+          sem intermediários. Escolha por onde entrar.
         </p>
       </div>
 
-      <div className="relative mt-8">
-        <div
-          ref={scrollerRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {PRODUCTS.map((p) => (
-            <ProductCard key={p.title} product={p} onPay={() => openPay(p)} />
-          ))}
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-3">
-          <button
-            aria-label="Anterior"
-            onClick={() => scrollBy(-1)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-card/70 text-secondary transition hover:bg-secondary/10"
-          >
-            ‹
-          </button>
-          <span className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-            {PRODUCTS.length} ofertas
-          </span>
-          <button
-            aria-label="Próximo"
-            onClick={() => scrollBy(1)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-card/70 text-secondary transition hover:bg-secondary/10"
-          >
-            ›
-          </button>
-        </div>
+      <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2">
+        {PRODUCTS.map((p) => (
+          <ProductCard key={p.title} product={p} onPay={() => openPay(p)} />
+        ))}
       </div>
+
+      <p className="mx-auto mt-6 max-w-md text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+        Pagamentos processados via banco Inter · Titular Cauan Pataxó
+      </p>
 
       <PixDialog
         open={open}
@@ -522,40 +601,62 @@ function ProductCard({ product, onPay }: { product: Product; onPay: () => void }
   const { badge, price, title, tagline, items, highlight } = product;
   return (
     <article
-      className={`relative flex w-[85%] shrink-0 snap-center flex-col overflow-hidden rounded-3xl border p-6 shadow-[var(--shadow-sagrado)] sm:w-[420px] ${
-        highlight ? "border-secondary/60 bg-card" : "border-border bg-card/70"
+      className={`relative flex flex-col overflow-hidden rounded-3xl border p-6 backdrop-blur-sm transition hover:-translate-y-0.5 ${
+        highlight
+          ? "border-secondary/70 bg-card shadow-[var(--shadow-sagrado)] md:col-span-2"
+          : "border-border/70 bg-card/60 shadow-[0_10px_30px_-15px_oklch(0.1_0.02_155/0.6)]"
       }`}
+      style={
+        highlight
+          ? {
+              backgroundImage:
+                "radial-gradient(ellipse at top right, oklch(0.55 0.14 155 / 0.28), transparent 60%), radial-gradient(ellipse at bottom left, oklch(0.82 0.14 105 / 0.18), transparent 55%)",
+            }
+          : undefined
+      }
     >
       {highlight && (
-        <div className="absolute right-4 top-4 rounded-full bg-secondary px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-secondary-foreground">
-          Mais escolhido
+        <div className="absolute right-4 top-4 rounded-full border border-secondary/60 bg-secondary/20 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-secondary">
+          ★ Escolha do Guia
         </div>
       )}
-      <div className="text-[11px] uppercase tracking-[0.25em] text-secondary">
-        {badge}
+      <div className="flex items-baseline gap-2">
+        <span className="text-lg text-secondary">✦</span>
+        <span className="text-[11px] uppercase tracking-[0.25em] text-secondary">
+          {badge}
+        </span>
       </div>
-      <div className="mt-2 font-display text-4xl text-foreground">{price}</div>
-      <div className="mt-1 font-display text-xl text-foreground/90">{title}</div>
+      <div className="mt-3 flex items-end gap-3">
+        <div className="font-display text-4xl leading-none text-foreground sm:text-5xl">
+          {price}
+        </div>
+      </div>
+      <div className="mt-2 font-display text-xl text-foreground/95 sm:text-2xl">
+        {title}
+      </div>
       <p className="mt-2 text-sm italic text-muted-foreground">{tagline}</p>
-      <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+
+      <div className="mt-4 h-px w-12 bg-secondary/40" />
+
+      <ul className="mt-4 flex-1 space-y-2 text-sm text-foreground/85">
         {items.map((it) => (
-          <li key={it} className="flex gap-2">
-            <span className="text-secondary">✦</span>
-            <span>{it}</span>
+          <li key={it} className="flex gap-2.5">
+            <span className="mt-0.5 text-secondary">✦</span>
+            <span className="leading-snug">{it}</span>
           </li>
         ))}
       </ul>
-      <div className="mt-6">
-        <button
-          onClick={onPay}
-          className="w-full rounded-full bg-gradient-to-r from-[oklch(0.68_0.16_40)] to-[oklch(0.78_0.13_80)] px-5 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
-        >
-          Pagar com Pix — {price}
-        </button>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          QR Code e chave copia-e-cola aparecem em seguida
-        </p>
-      </div>
+
+      <button
+        onClick={onPay}
+        className="mt-6 w-full rounded-full px-5 py-3 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sagrado)] transition hover:brightness-110"
+        style={{ background: "var(--gradient-brasa)" }}
+      >
+        Pagar com Pix — {price}
+      </button>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        QR Code e chave copia-e-cola aparecem em seguida
+      </p>
     </article>
   );
 }
