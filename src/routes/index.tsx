@@ -22,6 +22,15 @@ const CHECKOUT = "https://pay.kiwify.com.br/EoiEnhd";
 const GROUP = "https://chat.whatsapp.com/JXqSD1uJLEwCGxvYHim5lh?mode=gi_t";
 const INSTA = "https://www.instagram.com/cauanpataxo/";
 
+const TESTIMONIALS = [
+  { text: "Mas esse movimento que ele está gerando é de fato transformador para quem quiser. E somos parte disso.", who: "Jessica", where: "Grupo Os 7 Magos" },
+  { text: "Escuto e leio tudo. Participo, falo, aprendo. A visão de cada um, a história… esse grupo é especial.", who: "Participante", where: "Grupo Os 7 Magos" },
+  { text: "O legal é que o grupo se tornou um lugar de suporte. É um espaço pra respirar.", who: "Participante", where: "Grupo fechado" },
+  { text: "Conhecimento valioso. Muito feliz por estar participando. Gratidão.", who: "Participante", where: "7 dias de abertura de caminhos" },
+  { text: "Faço das suas palavras as minhas. Chegou pela metade, mas é incrível o quão avançado você está!", who: "Participante", where: "7 dias de abertura de caminhos" },
+  { text: "Muito bom a troca de ideia. Gratidão!", who: "Participante", where: "7 dias de abertura de caminhos" },
+];
+
 type ProfileKey = "guardiao" | "curador" | "visionario" | "semeador";
 
 const PROFILES: Record<
@@ -160,8 +169,19 @@ function Home() {
     setStage("result");
   };
 
+  const [booting, setBooting] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setBooting(false), 2600);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    document.body.style.overflow = booting ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [booting]);
+
   return (
     <main className="relative min-h-screen overflow-x-hidden">
+      <CandleSplash visible={booting} />
       <StarsBackdrop />
       <div className="relative">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
@@ -189,7 +209,7 @@ function Home() {
             </div>
           </div>
           <div className="order-1 md:order-2">
-            <img src={hero} alt="Cauan Pataxó na mata" width={1024} height={1280} className="mx-auto aspect-[4/5] w-full max-w-md rounded-[2rem] border border-border object-cover shadow-2xl" />
+            <img src={hero} alt="Cauan Pataxó em meio à mata, com colar de miçangas vermelhas" width={1024} height={1280} className="mx-auto aspect-[4/5] w-full max-w-md rounded-[2rem] border border-border object-cover object-top shadow-2xl" />
           </div>
         </section>
 
@@ -206,6 +226,37 @@ function Home() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 pb-16">
+          <p className="mb-2 text-center text-xs uppercase tracking-[0.25em] text-primary">Prova social</p>
+          <h2 className="text-center font-display text-3xl text-foreground md:text-4xl">Quem caminha junto, sente a diferença</h2>
+          <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              ["100 mil", "seguidores no Instagram"],
+              ["3,8 mi", "visualizações em 30 dias"],
+              ["1.200+", "publicações de conteúdo"],
+              ["3", "grupos ativos de estudo"],
+            ].map(([n, l]) => (
+              <div key={l} className="rounded-2xl border border-primary/30 bg-card/70 p-5 text-center backdrop-blur">
+                <div className="font-display text-3xl text-primary md:text-4xl">{n}</div>
+                <div className="mt-1 text-xs text-muted-foreground md:text-sm">{l}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {TESTIMONIALS.map((t) => (
+              <figure key={t.text} className="flex flex-col justify-between rounded-2xl border border-border bg-card/70 p-6 backdrop-blur">
+                <blockquote className="text-base leading-relaxed text-foreground">
+                  <span className="mr-1 font-display text-3xl leading-none text-primary">“</span>{t.text}
+                </blockquote>
+                <figcaption className="mt-4 text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t.who}</span> · {t.where}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground">Relatos reais de participantes dos grupos de estudo, compartilhados com autorização.</p>
         </section>
 
         <section ref={quizRef} className="mx-auto max-w-2xl scroll-mt-6 px-5 pb-20">
@@ -294,6 +345,24 @@ function Home() {
         Dúvidas? WhatsApp
       </a>
     </main>
+  );
+}
+
+function CandleSplash({ visible }: { visible: boolean }) {
+  return (
+    <div
+      aria-hidden={!visible}
+      role="status"
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-700 ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+    >
+      <div className="relative flex h-40 w-40 items-end justify-center">
+        <div className="absolute top-2 h-32 w-32 rounded-full bg-primary/30 blur-3xl" style={{ animation: "candle-glow 2.2s ease-in-out infinite" }} />
+        <div className="absolute bottom-[4.5rem] h-14 w-8 origin-bottom rounded-[50%_50%_50%_50%/70%_70%_30%_30%] bg-gradient-to-t from-primary via-primary/80 to-transparent" style={{ animation: "flame-flicker 0.9s ease-in-out infinite" }} />
+        <div className="relative h-20 w-9 rounded-t-sm bg-gradient-to-b from-foreground/90 to-foreground/60 shadow-lg" />
+      </div>
+      <p className="mt-6 font-display text-2xl text-foreground">Acendendo a vela...</p>
+      <p className="mt-1 text-sm text-muted-foreground">Cauan Pataxó</p>
+    </div>
   );
 }
 
