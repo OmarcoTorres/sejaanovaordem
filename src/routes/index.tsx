@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import hero from "@/assets/cauan-hero.jpg";
+import print7Magos from "@/assets/depoimentos-7-magos.jpeg.asset.json";
+import print7Dias from "@/assets/depoimentos-7-dias.jpeg.asset.json";
+import printInstagram from "@/assets/instagram-cauanpataxo.jpeg.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,15 +24,6 @@ const WHATS = "https://wa.me/5577981242361?text=" + encodeURIComponent("Olá Cau
 const CHECKOUT = "https://pay.kiwify.com.br/EoiEnhd";
 const GROUP = "https://chat.whatsapp.com/JXqSD1uJLEwCGxvYHim5lh?mode=gi_t";
 const INSTA = "https://www.instagram.com/cauanpataxo/";
-
-const TESTIMONIALS = [
-  { text: "Mas esse movimento que ele está gerando é de fato transformador para quem quiser. E somos parte disso.", who: "Jessica", where: "Grupo Os 7 Magos" },
-  { text: "Escuto e leio tudo. Participo, falo, aprendo. A visão de cada um, a história… esse grupo é especial.", who: "Participante", where: "Grupo Os 7 Magos" },
-  { text: "O legal é que o grupo se tornou um lugar de suporte. É um espaço pra respirar.", who: "Participante", where: "Grupo fechado" },
-  { text: "Conhecimento valioso. Muito feliz por estar participando. Gratidão.", who: "Participante", where: "7 dias de abertura de caminhos" },
-  { text: "Faço das suas palavras as minhas. Chegou pela metade, mas é incrível o quão avançado você está!", who: "Participante", where: "7 dias de abertura de caminhos" },
-  { text: "Muito bom a troca de ideia. Gratidão!", who: "Participante", where: "7 dias de abertura de caminhos" },
-];
 
 type ProfileKey = "guardiao" | "curador" | "visionario" | "semeador";
 
@@ -244,15 +238,28 @@ function Home() {
               </div>
             ))}
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <figure key={t.text} className="flex flex-col justify-between rounded-2xl border border-border bg-card/70 p-6 backdrop-blur">
-                <blockquote className="text-base leading-relaxed text-foreground">
-                  <span className="mr-1 font-display text-3xl leading-none text-primary">“</span>{t.text}
-                </blockquote>
-                <figcaption className="mt-4 text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">{t.who}</span> · {t.where}
-                </figcaption>
+          <p className="mt-10 mb-3 text-center text-xs uppercase tracking-[0.25em] text-primary">Prints reais</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                src: print7Magos.url,
+                cap: "Grupo Os 7 Magos",
+                alt: "Depoimento de participante no grupo Os 7 Magos no WhatsApp",
+              },
+              {
+                src: print7Dias.url,
+                cap: "Grupo 7 dias de abertura de caminhos",
+                alt: "Depoimentos de participantes no grupo 7 dias de abertura de caminhos no WhatsApp",
+              },
+              {
+                src: printInstagram.url,
+                cap: "@cauanpataxo no Instagram",
+                alt: "Perfil de Cauan Pataxó no Instagram com 100 mil seguidores e 3,8 milhões de visualizações em 30 dias",
+              },
+            ].map((p) => (
+              <figure key={p.cap} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card/70 backdrop-blur">
+                <img src={p.src} alt={p.alt} loading="lazy" className="w-full object-cover" />
+                <figcaption className="px-4 py-3 text-xs text-muted-foreground">{p.cap}</figcaption>
               </figure>
             ))}
           </div>
