@@ -5,6 +5,9 @@ import hero from "@/assets/cauan-hero.jpg";
 import print7Magos from "@/assets/depoimentos-7-magos.jpeg.asset.json";
 import print7Dias from "@/assets/depoimentos-7-dias.jpeg.asset.json";
 import printInstagram from "@/assets/instagram-cauanpataxo.jpeg.asset.json";
+import printSuporte from "@/assets/depoimento-suporte.jpeg.asset.json";
+import printInicio from "@/assets/instagram-inicio.jpeg.asset.json";
+import printMagosVendas from "@/assets/grupo-7-magos-vendas.jpeg.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -256,14 +259,48 @@ function Home() {
                 cap: "@cauanpataxo no Instagram",
                 alt: "Perfil de Cauan Pataxó no Instagram com 100 mil seguidores e 3,8 milhões de visualizações em 30 dias",
               },
+              {
+                src: printSuporte.url,
+                cap: "“Um espaço pra respirar”",
+                alt: "Depoimento: o grupo se tornou um lugar de suporte, um espaço pra respirar",
+              },
+              {
+                src: printMagosVendas.url,
+                cap: "Os 7 Magos · troca diária entre membros",
+                alt: "Conversa entre membros do grupo Os 7 Magos sobre vendas e clientes",
+              },
             ].map((p) => (
               <figure key={p.cap} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card/70 backdrop-blur">
-                <img src={p.src} alt={p.alt} loading="lazy" className="w-full object-cover" />
+                <img src={p.src} alt={p.alt} loading="lazy" className="max-h-[520px] w-full object-cover object-top" />
                 <figcaption className="px-4 py-3 text-xs text-muted-foreground">{p.cap}</figcaption>
               </figure>
             ))}
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">Relatos reais de participantes dos grupos de estudo, compartilhados com autorização.</p>
+
+          <div className="mt-12 grid items-center gap-6 rounded-3xl border border-primary/30 bg-card/70 p-6 backdrop-blur md:grid-cols-[1fr_1.4fr] md:p-8">
+            <div className="grid grid-cols-2 gap-3">
+              <figure className="overflow-hidden rounded-xl border border-border">
+                <img src={printInicio.url} alt="Perfil antigo de Cauan com 709 seguidores" loading="lazy" className="h-64 w-full object-cover object-top" />
+                <figcaption className="bg-background/60 py-2 text-center text-xs text-muted-foreground">Antes · 709</figcaption>
+              </figure>
+              <figure className="overflow-hidden rounded-xl border border-primary/50">
+                <img src={printInstagram.url} alt="Perfil atual com 100 mil seguidores" loading="lazy" className="h-64 w-full object-cover object-top" />
+                <figcaption className="bg-primary/15 py-2 text-center text-xs text-primary">Hoje · 100 mil</figcaption>
+              </figure>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-primary">A caminhada</p>
+              <h3 className="mt-2 font-display text-3xl text-foreground">De 709 para 100 mil pessoas</h3>
+              <p className="mt-3 text-muted-foreground">
+                Não foi sorte. Foi disciplina, raiz e as leis herméticas aplicadas todo dia. É exatamente esse caminho que eu abro
+                dentro da Nova Ordem.
+              </p>
+              <a href={CHECKOUT} target="_blank" rel="noreferrer" className="mt-5 inline-block rounded-full bg-primary px-7 py-3 font-semibold text-primary-foreground shadow-lg hover:opacity-90">
+                Quero entrar na Nova Ordem →
+              </a>
+            </div>
+          </div>
         </section>
 
         <section ref={quizRef} className="mx-auto max-w-2xl scroll-mt-6 px-5 pb-20">
@@ -325,20 +362,43 @@ function Home() {
           )}
         </section>
 
-        <section className="mx-auto max-w-3xl px-5 pb-20">
-          <div className="rounded-3xl border border-primary/40 bg-card/80 p-8 text-center backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.25em] text-primary">Desafio 28 Dias</p>
-            <h2 className="mt-2 font-display text-3xl text-foreground">28 dias de reconexão guiada</h2>
-            <ul className="mx-auto mt-5 max-w-md space-y-2 text-left text-muted-foreground">
-              <li>✦ Banhos, defumações e orações guiadas</li>
-              <li>✦ Meditações, limpezas e canalizações</li>
-              <li>✦ Leis herméticas aplicadas à rotina</li>
-              <li>✦ Grupo fechado no WhatsApp com Cauan</li>
-            </ul>
-            <a href={CHECKOUT} target="_blank" rel="noreferrer" className="mt-7 inline-block rounded-full bg-primary px-8 py-4 font-semibold text-primary-foreground">Quero participar</a>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Já comprou? <a href={GROUP} target="_blank" rel="noreferrer" className="text-primary underline">Entre no grupo fechado</a>
-            </p>
+        <section id="nova-ordem" className="mx-auto max-w-4xl px-5 pb-24">
+          <div className="relative overflow-hidden rounded-[2rem] border-2 border-primary/60 bg-card/90 p-7 shadow-2xl backdrop-blur md:p-12">
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl" />
+            <div className="relative text-center">
+              <span className="inline-block rounded-full border border-primary/50 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.25em] text-primary">Acesso exclusivo</span>
+              <h2 className="mt-4 font-display text-4xl leading-tight text-foreground md:text-5xl">A Nova Ordem</h2>
+              <p className="mx-auto mt-3 max-w-xl text-lg text-muted-foreground">
+                O material e os ensinamentos que eu não publico no Instagram. Um caminho guiado de 28 dias para lembrar quem você é.
+              </p>
+            </div>
+            <div className="relative mt-8 grid gap-3 md:grid-cols-2">
+              {[
+                ["Conteúdo exclusivo", "Ensinamentos fechados da Nova Ordem, só para membros."],
+                ["Desafio 28 Dias", "Banhos, defumações, orações e meditações guiadas dia a dia."],
+                ["Leis herméticas na prática", "As 7 leis aplicadas à rotina, aos estudos e aos projetos."],
+                ["Grupo fechado com Cauan", "Suporte diário no WhatsApp com quem caminha junto."],
+              ].map(([t, d]) => (
+                <div key={t} className="flex gap-3 rounded-2xl border border-border bg-background/40 p-4 text-left">
+                  <span className="mt-0.5 text-primary">✦</span>
+                  <div>
+                    <div className="font-semibold text-foreground">{t}</div>
+                    <div className="text-sm text-muted-foreground">{d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="relative mt-8 text-center">
+              <a href={CHECKOUT} target="_blank" rel="noreferrer" className="block w-full rounded-full bg-primary px-8 py-5 text-lg font-bold text-primary-foreground shadow-xl transition hover:scale-[1.02] hover:opacity-95 md:inline-block md:w-auto">
+                Garantir meu acesso à Nova Ordem →
+              </a>
+              <p className="mt-3 text-xs text-muted-foreground">Pagamento seguro pela Kiwify · Acesso liberado após a compra</p>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Já comprou? <a href={GROUP} target="_blank" rel="noreferrer" className="text-primary underline">Entre no grupo fechado</a>
+                {" · "}
+                <a href={WHATS} target="_blank" rel="noreferrer" className="text-primary underline">Tirar dúvida no WhatsApp</a>
+              </p>
+            </div>
           </div>
         </section>
 
