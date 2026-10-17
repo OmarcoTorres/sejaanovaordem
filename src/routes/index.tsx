@@ -201,7 +201,7 @@ function Home() {
                 Descobrir meu perfil
               </button>
               <a href={CHECKOUT} target="_blank" rel="noreferrer" className="rounded-full border border-primary/50 px-7 py-4 text-center font-semibold text-foreground hover:bg-primary/10">
-                Entrar no Desafio 28 Dias
+                Entrar na Nova Ordem
               </a>
             </div>
           </div>
@@ -355,7 +355,7 @@ function Home() {
                 <div><dt className="font-semibold text-primary">Ritual de hoje</dt><dd className="text-muted-foreground">{PROFILES[profile].ritual}</dd></div>
               </dl>
               <a href={CHECKOUT} target="_blank" rel="noreferrer" className="mt-7 block rounded-full bg-primary py-4 text-center font-semibold text-primary-foreground">
-                Ativar meu perfil no Desafio 28 Dias
+                Ativar meu perfil na Nova Ordem →
               </a>
               <button onClick={startQuiz} className="mt-3 w-full text-sm text-muted-foreground">Refazer o teste</button>
             </div>
